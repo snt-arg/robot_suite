@@ -62,8 +62,8 @@ markdown_extensions:
 
 nav:
     - 🏠 Home:
-          - Overview: Home/index.md
-          - Publications: Home/publications.md
+          - Overview: index.md
+          - Publications: publications.md
     - 🚀 Getting Started:
           - Installation: GettingStarted/installation.md
           - Docker: GettingStarted/docker.md
