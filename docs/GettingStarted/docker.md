@@ -1,19 +1,28 @@
-# Docker
+# 🐳 Docker
 
-!!! warning
+For this project, we are making use of Docker Compose to ease the build and start of containers.
+The `docker-compose.yml` file is/will be composed of services, where each service is
+targeted for each robot platform.
 
-    This is still not up to date!
+This project uses **Docker Compose** to simplify building and running containers for different robot platforms.
 
-A `Dockerfile` is provided for using this suite within Docker. This makes it easy to test and use without the need of installing any dependency on your computer nor even install ROS2.
-Additionally, a `docker-compose.yml` is also available to streamline the execution of the bringup and any other component that will come in the future.
+The main configuration file is `docker-compose.yml`, which defines a separate **service** for each supported robot platform.
 
-## Usage
+!!! note
+
+    Currently, only the **Tello** robot platform is supported.
+
+## 🚀 Getting Started
 
 !!! Danger "Important"
 
-    To make sure that you have GUI support, run the following command once `xhost +local:docker`.
+    If you want to use GUI applications inside Docker (e.g., visual tools like RViz), run the following command once before starting any containers:
 
-### With Docker Compose (Recommended)
+    ```bash
+    xhost +local:docker
+    ```
+
+### Using Docker Compose (Recommended)
 
 !!! info
 
@@ -21,38 +30,90 @@ Additionally, a `docker-compose.yml` is also available to streamline the executi
     You can check if it is installed by running `docker-compose -v`. On ubuntu,
     you can install it using `sudo apt install docker-compose`
 
-For an easy to use experience:
+    Make sure you have docker-compose installed.
+    You can check with:
 
-1. Go to the root of the project
+    ```bash
+    docker-compose -v
+    ```
 
-2. Run `docker-compose`
+    On Ubuntu, install it using:
+
+    ```bash
+    sudo apt install docker-compose
+    ```
+
+**Steps**:
+
+1. Open a terminal and navigate to the root directory of the project.
+
+1. Run the following command (replace <robot_platform> with the desired platform):
+   docker compose up <robot_platform>\_suite
+
+**Available Platforms**
+
+- **tello**:
+    ```bash
+    docker compose up tello_suite
+    ```
+
+### Manual Docker Usage (Advanced)
+
+If you prefer not to use Docker Compose, you can build and run the containers manually.
+
+Each robot platform has its own `Dockerfile` located at: `docker/<robot_platform>/Dockerfile`
+
+!!! tip
+
+    Replace <robot_platform> with one of the supported platforms:
+
+    - tello
+
+**Steps**:
+
+- Go to the root of the project.
+
+- Build the Docker image:
 
 ```bash
-docker compose up
+docker build -t <robot_platform>_suite -f docker/<robot_platform>/Dockerfile .
 ```
 
-### Manual
+- Run the container and launch the robot system (recommended):
 
-1. Go to the root of the project
-
-1. Build the docker image
-
-```sh
-docker build -t tello_suite .
+```bash
+docker run --rm -it \
+    -v /tmp/.X11-unix:/tmp/.X11-unix \
+    -e DISPLAY=$DISPLAY \
+    --net=host \
+    <robot_platform>_suite \
+    ros2 launch <robot_package> system_launch.py
 ```
 
-3. Create container and run container with bringup (Recommended)
+- Or start the container with a terminal session:
 
-```sh
-docker run --rm -it -v /tmp/.X11-unix:/tmp/.X11-unix \
-    -e DISPLAY=$DISPLAY --net=host tello_suite \
-    ros2 launch tello_bringup system_launch.py
+```bash
+docker run --rm -it \
+    -v /tmp/.X11-unix:/tmp/.X11-unix \
+    -e DISPLAY=$DISPLAY \
+    --net=host \
+    <robot_platform>_suite \
 ```
 
-4. Create container and run container with bash
+!!! example "Example for Tello Platform"
 
-```sh
-docker run --rm -it -v /tmp/.X11-unix:/tmp/.X11-unix \
-    -e DISPLAY=$DISPLAY --net=host tello_suite \
-    bash
-```
+    ```bash
+    # Step 1: Build the Docker image
+    docker build -t tello_suite -f docker/tello/Dockerfile .
+
+    # Step 2: Enable GUI support
+    xhost +local:docker
+
+    # Step 3: Launch the system inside the container
+    docker run --rm -it \
+        -v /tmp/.X11-unix:/tmp/.X11-unix \
+        -e DISPLAY=$DISPLAY \
+        --net=host \
+        tello_suite \
+        ros2 launch tello_bringup system_launch.py
+    ```
