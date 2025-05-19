@@ -57,6 +57,7 @@ class BtServerNode(Node):
 
     def print_tree(self, tree: BehaviourTree):
         print(py_trees.display.unicode_tree(root=tree.root, show_status=True))
+        print(self._global_blackboard)
 
     def run(self):
         while rclpy.ok():

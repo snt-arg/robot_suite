@@ -56,8 +56,6 @@ class PluginClient(py_trees.behaviour.Behaviour):
             self.node.get_logger().error("Make sure you have called setup method")
             return py_trees.common.Status.INVALID
 
-        print(self._global_blackboard)
-
         response = self._send_tick()
 
         if response is None:
