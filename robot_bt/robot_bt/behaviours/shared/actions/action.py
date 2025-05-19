@@ -8,6 +8,11 @@ class Action(py_trees.behaviour.Behaviour):
     Use this in case you need to work with anything ros2 related
     """
 
+    _global_blackboard: py_trees.blackboard.Client
+
     def __init__(self, name, bt_node: Node):
         super().__init__(name)
         self.node = bt_node
+
+        self._global_blackboard = py_trees.blackboard.Client(name="Global")
+        self._global_blackboard.register_key("actions", py_trees.common.Access.WRITE)

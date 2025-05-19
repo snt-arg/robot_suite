@@ -1,3 +1,5 @@
+import json
+from typing import Dict
 import py_trees
 from robot_interfaces.srv import PluginInterface
 from rclpy.node import Node
@@ -15,11 +17,17 @@ class PluginClient(py_trees.behaviour.Behaviour):
     """
 
     client: Client
+    _global_blackboard: py_trees.blackboard.Client
 
     def __init__(self, name: str, plugin_name: str, bt_node: Node):
         super().__init__(name)
         self.plugin_name = plugin_name
         self.node = bt_node
+
+        self._global_blackboard = py_trees.blackboard.Client(name="Global")
+        self._global_blackboard.register_key("actions", py_trees.common.Access.WRITE)
+        self._global_blackboard.register_key("plugins", py_trees.common.Access.WRITE)
+
 
     def setup(self) -> None:  # type: ignore
         self.client = self.node.create_client(
@@ -36,8 +44,7 @@ class PluginClient(py_trees.behaviour.Behaviour):
 
         request = PluginInterface.Request()
 
-        # TODO: Send the blackboard information if set
-        request.blackboard = "{}"
+        request.blackboard = self._serialize_blackboard()
 
         future = self.client.call_async(request)
         rclpy.spin_until_future_complete(self.node, future)
@@ -49,9 +56,30 @@ class PluginClient(py_trees.behaviour.Behaviour):
             self.node.get_logger().error("Make sure you have called setup method")
             return py_trees.common.Status.INVALID
 
+        print(self._global_blackboard)
+
         response = self._send_tick()
 
         if response is None:
             return py_trees.common.Status.FAILURE
 
+        self._deserialize_blackboard(response.blackboard)
+
         return py_trees.common.Status(STATUS_MAP[response.status])
+
+    def _serialize_blackboard(self) -> str:
+        if not self._global_blackboard.exists("actions"):
+            self._global_blackboard.set("actions", {})
+        actions = self._global_blackboard.get("actions")
+
+        encoded_blackboard = json.dumps(actions)
+
+        return encoded_blackboard
+
+
+    def _deserialize_blackboard(self, encoded_blackboard: str) -> None:
+        print(encoded_blackboard)
+        blackboard = json.loads(encoded_blackboard)
+        # TODO: Make a union of received blackboard with current blackboard
+
+        self._global_blackboard.set("actions", blackboard)

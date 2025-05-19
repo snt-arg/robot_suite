@@ -310,8 +310,8 @@ def main():
     node = PluginNode("test_plugin_node")
 
     def tick_dummy(blackboard):
-        del blackboard
         print("Ticking...")
+        blackboard["land_action"] = {"topic_name":"/newName"}
         return NodeState.SUCCESS
 
     node.tick = tick_dummy  # type: ignore

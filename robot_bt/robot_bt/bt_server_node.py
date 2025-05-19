@@ -1,6 +1,8 @@
+from collections import defaultdict
 import time
 import py_trees
 from py_trees.trees import BehaviourTree
+from py_trees.blackboard import Client
 from rclpy import Optional
 from rclpy.logging import rclpy
 from rclpy.node import Node
@@ -12,6 +14,7 @@ class BtServerNode(Node):
     _bt_name: str = "simple_bt"
     _stop_on_failure: bool = False
     bt: Optional[BehaviourTree]
+    _global_blackboard: Client
 
     def __init__(self, node_name):
         super().__init__(node_name)
@@ -19,11 +22,19 @@ class BtServerNode(Node):
         self.declare_params()
         self.read_params()
 
+        self._global_blackboard = Client(name="Global")
+        self._global_blackboard.register_key("plugins", py_trees.common.Access.WRITE)
+        self._global_blackboard.register_key("actions", py_trees.common.Access.WRITE)
+
+        self._global_blackboard.plugins = dict({})
+        self._global_blackboard.actions = dict({})
+
         try:
             self.get_logger().info(f"Trying to bootstrap {self._bt_name} BT")
             bootstrap_fn = bootstrap_bt(self._bt_name)
             self.get_logger().info(f"{self._bt_name} has been bootstrapped")
             self.bt = BehaviourTree(root=bootstrap_fn(self))
+            self.bt.root.attach_blackboard_client("Global")
             self.bt.setup()
         except:
             self.get_logger().error(f"Unable to bootstrap BT -> {self._bt_name}")
