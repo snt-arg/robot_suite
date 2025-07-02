@@ -163,13 +163,13 @@ def create_video_interface_plugin_launch(ld:LaunchDescription)-> None:
     pkg_dir = get_package_share_directory("robot_bringup")
     params_file = os.path.join(pkg_dir, "config", "params.yaml")
     #pck_dir = get_package_share_directory("object_following_plugin")
-    ld.add_action(
-        Node(
-            package='video_interface_plugin',
-            executable='video_interface_node',
-            parameters=[params_file],)
-            #prefix='gnome-terminal --',)
-    )
+    #ld.add_action(
+       # Node(
+      #      package='video_interface_plugin',
+     #       executable='video_interface_node',
+     #       parameters=[params_file],)
+    #        #prefix='gnome-terminal --',)
+   # )
     ld.add_action(
         Node(
             package='drawer_plugin',

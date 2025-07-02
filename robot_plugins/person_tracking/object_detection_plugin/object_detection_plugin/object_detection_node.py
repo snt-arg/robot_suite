@@ -44,7 +44,7 @@ class ObjectDetector(PluginNode):
 
     # classes of interest (for detection)
     person_classes = ["person"] # person class names
-    objects = ["cell phone"] # list of objects 
+    objects = ["cell phone","backpack","umbrella","handbag","bottle", "cup","fork","knife","spoon", "bowl","banana","apple", "book"] # list of objects 
     classes = None
     
     # minimum confidence probability for a detection to be accepted

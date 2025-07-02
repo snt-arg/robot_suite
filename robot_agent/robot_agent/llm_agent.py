@@ -18,6 +18,7 @@ from sensor_msgs.msg import BatteryState
 from colorama import Fore, Style, init
 import time
 import json
+from datetime import datetime
 import logging
 init(autoreset=True) 
 
@@ -149,12 +150,10 @@ class TelloController(PluginNode):
             return
 
         try:
-            # 2. Receive the list of all people from /tracking_info
             list_of_people = json.loads(msg.data)
             if not isinstance(list_of_people, list):
                 list_of_people = [list_of_people]
 
-            # 3. Check each person to find the "compatible" one
             for person_data in list_of_people:
                 # Look inside the 'objects' list for each person
                 if 'info' in person_data and isinstance(person_data['info'], dict) and 'objects' in person_data['info']:
@@ -169,10 +168,9 @@ class TelloController(PluginNode):
                         filtered_info = json.dumps(person_data)
                         self.tracking_info_pub.publish(String(data=filtered_info))
                         
-                        # --- Signal success and stop looking ---
                         last_published_data = filtered_info
                         tracking_confirmation_received.set()
-                        current_tracking_object = None  # Disarm to prevent re-publishing
+                        current_tracking_object = None  
                         
                         break # Stop checking other people in this message
                         
@@ -261,7 +259,7 @@ def remove_palm_land_pub(name: str):
 
 
 openai_llm = ChatOpenAI(
-    # model="gpt-4-turbo",  # or your preferred model
+    model="gpt-4-turbo",  # or your preferred model
     temperature=0,
     timeout=None,
     max_retries=2,
@@ -282,6 +280,11 @@ ollamallm = ChatOllama(
 @tool
 def takeoff() -> str:
     '''Command the robot to take off and transition from ground to air. It cannot be used if the robot is already in the air.'''
+
+    # time stamp
+    time_str = datetime.now().strftime("%H:%M:%S:%f")
+    print(Fore.CYAN + f"[{time_str}] Start takeoff tool time..")
+
     pub = takeoff_pubs.get(ROBOT_NAME)
     state_data = drone_states.get(ROBOT_NAME)
     if not pub:
@@ -295,6 +298,10 @@ def takeoff() -> str:
         return f"{ROBOT_NAME} is not on the ground. Current state: '{current_physical_state}'. Cannot takeoff."
     try:
         pub.publish(Empty())
+
+        time_str = datetime.now().strftime("%H:%M:%S:%f")
+        print(Fore.CYAN + f"[{time_str}] End takeoff tool time..") 
+
         return f"{ROBOT_NAME} is taking off."
     except Exception as e:
         return f"Failed to take off {ROBOT_NAME}: {e}"
@@ -314,7 +321,7 @@ def move(linear: List[float], angular: float, duration: int) -> str:
     - angular z-axis: +z is counter-clockwise turn (left), -z is clockwise turn (right).
 
     To perform this movement, the drone must be in the air.
-    The user may specify a speed (e.g., "velocity 1m/s", "go slowly"). If a speed is provided, use it to set the magnitude of the linear velocity vector. If no speed is specified, use a default of 0.5 m/s.
+    The user may specify a speed (e.g., "velocity 1m/s", "go slowly"). If a speed is provided, use it to set the magnitude of the linear velocity vector. If no speed is specified, use a default of 1 m/s or -1 m/s.
     If the user does not specify a time, assume a default duration of 1 second.
     If the drone's height is below 8 units (8dm), it cannot move down.
 
@@ -323,6 +330,11 @@ def move(linear: List[float], angular: float, duration: int) -> str:
     :param angular: A float for z-axis angular velocity (rotation).
     :param duration: Duration of the movement in seconds.
     '''
+
+    # time stamp
+    time_str = datetime.now().strftime("%H:%M:%S:%f")
+    print(Fore.CYAN + f"[{time_str}] Start motion time..")
+    
     pub = cmd_vel_pubs.get(ROBOT_NAME)
     state_data = drone_states.get(ROBOT_NAME)
     if not pub:
@@ -350,14 +362,17 @@ def move(linear: List[float], angular: float, duration: int) -> str:
         
         print(f"DEBUG: LLM called move() with linear={linear}, angular={angular}, duration={duration}s")
         
-        
-        
+
         while time.time() - start_time < duration:
             pub.publish(msg_twist)
             time.sleep(sleep_interval)
             
         # Send a final command to stop the drone
         pub.publish(Twist())
+
+        # time stamp
+        time_str = datetime.now().strftime("%H:%M:%S:%f")
+        print(Fore.CYAN + f"[{time_str}] End motion time..")
         
         return f"Moved {ROBOT_NAME} with linear={linear}, angular={angular} for {duration}s and then stopped."
     except Exception as e:
@@ -367,6 +382,11 @@ def move(linear: List[float], angular: float, duration: int) -> str:
 @tool
 def land() -> str:
     '''Command the robot to land and transition from air to ground. It cannot be used if the robot is already on the ground.'''
+
+    # time stamp
+    time_str = datetime.now().strftime("%H:%M:%S:%f")
+    print(Fore.CYAN + f"[{time_str}] Start landing time..")
+
     pub = land_pubs.get(ROBOT_NAME)
     state_data = drone_states.get(ROBOT_NAME)
     if not pub:
@@ -382,6 +402,11 @@ def land() -> str:
         return f"{ROBOT_NAME} is not in the air. Current state: '{current_physical_state}'. Cannot land."
     try:
         pub.publish(Empty())
+
+        # time stamp
+        time_str = datetime.now().strftime("%H:%M:%S:%f")
+        print(Fore.CYAN + f"[{time_str}] End landing time..")
+
         return f"{ROBOT_NAME} is landing."
     except Exception as e:
         return f"Failed to land {ROBOT_NAME}: {e}"
@@ -393,6 +418,11 @@ def flip(direction: str) -> str:
      To perform this movement the drone must be in the air (em_sky=1), at a height of at least 8 units (e.g. 8dm), and in fly_mode 6 or 31.
      The battery level must be above 20% to perform the flip maneuver.
      If in air but not in fly_mode 6 or 31, it will wait up to 10 seconds for the mode to change.'''
+    
+
+    # time stamp
+    time_str = datetime.now().strftime("%H:%M:%S:%f")
+    print(Fore.CYAN + f"[{time_str}] Start flip time..")
     
     state_data = drone_states.get(ROBOT_NAME)
     battery_level = battery_levels.get(ROBOT_NAME) 
@@ -467,6 +497,11 @@ def flip(direction: str) -> str:
             msg_flip.flip_backward = True
             
         pub.publish(msg_flip)
+
+        # time stamp
+        time_str = datetime.now().strftime("%H:%M:%S:%f")
+        print(Fore.CYAN + f"[{time_str}] End flip time..") 
+
         return f"{ROBOT_NAME} performed a flip to the {direction}."
     except Exception as e:
         return f"Failed to flip {ROBOT_NAME}: {e}"
@@ -516,6 +551,11 @@ def switch_mode(mode: str) -> str:
 
     :param mode: The desired control mode as a string (e.g., "keyboard", "hand").
     '''
+
+    # time stamp
+    time_str = datetime.now().strftime("%H:%M:%S:%f")
+    print(Fore.CYAN + f"[{time_str}] Start switch mode time..")
+
     pub = mode_switch_pubs.get(ROBOT_NAME) 
     if not pub:
         return f"No mode_switch publisher found for {ROBOT_NAME}."
@@ -535,6 +575,11 @@ def switch_mode(mode: str) -> str:
         msg_str = String() 
         msg_str.data = message_to_publish_on_topic
         pub.publish(msg_str)
+
+        # time stamp
+        time_str = datetime.now().strftime("%H:%M:%S:%f")
+        print(Fore.CYAN + f"[{time_str}] End switch mode time..")
+
         return (f"For {ROBOT_NAME}, command to switch to '{mode_requested_by_llm}' mode processed. "
                 f"Signal '{message_to_publish_on_topic}' published to /key_pressed.")
     except Exception as e:
@@ -554,6 +599,11 @@ def start_object_tracking(object_name: str) -> str:
     If you cannot find a clear match, respond by saying "There are no similar objects to track."
     :param object_name: str - The chosen object name from the list.
     '''
+
+    # time stamp
+    time_str = datetime.now().strftime("%H:%M:%S:%f")
+    print(Fore.CYAN + f"[{time_str}] Start start_tracking tool time..")
+    
     global current_tracking_object, tracking_confirmation_received, last_published_data
 
     if current_tracking_object:
@@ -585,14 +635,27 @@ def start_object_tracking(object_name: str) -> str:
         response = f"Successfully found and locked on to person with '{current_tracking_object}'. Published data: {last_published_data}"
         if node:
             node.get_logger().info(response)
+
+        time_str = time.strftime("%H:%M:%S")
+        print(Fore.CYAN + f"[{time_str}] End tracking time..")
+        
         return response
     else:
         current_tracking_object = None
         response = f"Failed to find a person with a '{object_name}' within 5 seconds. Please ensure they and the object are visible."
         if node:
             node.get_logger().warn(response)
+        
+        time_str = datetime.now().strftime("%H:%M:%S:%f")
+        print(Fore.CYAN + f"[{time_str}] End start_tracking tool time..")
         return response
 
+
+import json
+from std_msgs.msg import String
+
+# Assuming tracking_info_pubs, ROBOT_NAME, and current_tracking_object are defined
+# in the global scope as in the original context.
 
 @tool
 def stop_object_tracking() -> str:
@@ -600,24 +663,32 @@ def stop_object_tracking() -> str:
     Stops tracking the current object and clears the tracking target.
     An explicit "stop_tracking" message is sent to the tracking system.
     '''
-    global current_tracking_object
-    if current_tracking_object is None:
-        return f"{ROBOT_NAME} is not currently tracking any specific object."
 
+    time_str = datetime.now().strftime("%H:%M:%S:%f")
+    print(Fore.CYAN + f"[{time_str}] Start stop_tracking tool time..")
+
+    global current_tracking_object
+    
+    # Get the publisher for the tracking topic.
+    pub = tracking_info_pubs.get(ROBOT_NAME) 
+    if not pub:
+        return f"Error: No tracking_info publisher found for {ROBOT_NAME}."
+
+    try:
+        stop_tracking_message = json.dumps({"action": "stop_tracking", "params": {}})
+        pub.publish(String(data=stop_tracking_message))
+    except Exception as e:
+        return f"Failed to publish stop tracking command for {ROBOT_NAME}: {e}"
     previous_object = current_tracking_object
     current_tracking_object = None
 
-    pub = tracking_info_pubs.get(ROBOT_NAME) 
-    if not pub:
-        return f"No tracking_info publisher found for {ROBOT_NAME} to send stop command."
+    time_str = datetime.now().strftime("%H:%M:%S:%f")
+    print(Fore.CYAN + f"[{time_str}] End stop_tracking tool time..")
 
-    try:
-        # MODIFIED: Added 'object_id' to the JSON message for potential use by the tracking system.
-        stop_tracking_message = json.dumps({"action": "stop_tracking", "object_id": previous_object, "params": {}})
-        pub.publish(String(data=stop_tracking_message))
-        return f"{ROBOT_NAME} has stopped tracking '{previous_object}'. Stop command published."
-    except Exception as e:
-        return f"Failed to publish stop tracking command for {ROBOT_NAME}: {e}"
+    if previous_object:
+        return f"{ROBOT_NAME} has stopped tracking '{previous_object}'. Stop command was successfully published."
+    else:
+        return f"A stop command was sent to {ROBOT_NAME} to ensure tracking is disabled."
 
 
 @tool
@@ -726,15 +797,19 @@ async def run():
             log.info("--- Session Ended ---")
             break
         
-        # --- 2. Print the time AFTER the command is entered ---
-        processing_time_str = time.strftime("%H:%M:%S")
-        print(Fore.CYAN + f"[{processing_time_str}] Processing command...")
+
         
         # Log the prompt to the file
         log.info(f"USER_PROMPT: {query}")
         
         # Start processing the command
+        processing_time_str = time.strftime("%H:%M:%S")
+        print(Fore.CYAN + f"[{processing_time_str}] Processing command...")
+
         await submit(query)
+
+        processing_time_str = time.strftime("%H:%M:%S")
+        print(Fore.CYAN + f"[{processing_time_str}] Response received...")
 
 #asyncio.run(run())
 

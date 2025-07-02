@@ -45,7 +45,7 @@ class VideoContainer:
         elif self.display_mode == "h" and self.skeleton_layer is not None:
             self.display.blit(self.skeleton_layer, (0, 0))
 
-        """ No need for this now. This was commented by Ingrid CIM
+        
         battery_text = self.font.render("Battery", True, (255, 255, 255))
         battery_percentage = self.font.render(f"{self.battery}%", True, (255, 255, 255))
         self.display.blit(battery_text, (self.display.get_width() // 3, 5))
@@ -58,6 +58,6 @@ class VideoContainer:
             "green",
             (self.display.get_width() // 3 - 200, 20, 4 * self.battery, 10),
         )
-        """
+        
         pygame.display.flip()
         

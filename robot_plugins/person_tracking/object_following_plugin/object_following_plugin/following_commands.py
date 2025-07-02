@@ -70,7 +70,7 @@ class TrackPerson(PluginNode):
 
     # rotation values
     angular_speed = pi/7
-    target_angle = pi/3
+    target_angle = pi/7
     
     def __init__(self,name):
         #Creating the Node

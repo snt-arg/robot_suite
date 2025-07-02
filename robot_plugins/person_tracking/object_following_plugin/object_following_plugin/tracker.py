@@ -32,7 +32,7 @@ class Tracker(PluginNode):
     # topic names
     pilot_topic = "/person_tracked"
     bounding_boxes_topic = "/all_bounding_boxes"
-    llm_tracking_signal_topic = "/tracking_info_pilot_person"
+    llm_tracking_signal_topic = "/tracking_signal"
     hand_tracking_signal_topic = "/tracking_signal_gesture"
     tracking_status_topic = "/tracking_status"
 
@@ -56,8 +56,8 @@ class Tracker(PluginNode):
     target_class = "person"
     min_overlap = 0.09
 
-    rotation_speed = pi/3
-    rotation_angle = pi/3
+    rotation_speed = pi/7
+    rotation_angle = pi/7
 
 
 
@@ -91,7 +91,7 @@ class Tracker(PluginNode):
         self.no_update_count = 0 
         
         # mode = llm or hand
-        self.mode = "hand" #"llm"
+        self.mode =  "llm" #"hand"
 
         #Queue to keep the last nonempty midpoints. Help to calculate the trajectory of the person before he got lost
         self.midpoint_queue = deque(maxlen=self.max_length_midpoint_queue)
