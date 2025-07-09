@@ -14,7 +14,7 @@ nanodet_m.ckpt
 altitude_checker.py
 robot_station/
 node_modules/
-
+.vscode/
 
 ### Python ###
 # Byte-compiled / optimized / DLL files
