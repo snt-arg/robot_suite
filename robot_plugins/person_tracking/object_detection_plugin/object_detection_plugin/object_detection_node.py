@@ -33,7 +33,7 @@ import torch
 
 class ObjectDetector(PluginNode):
 
-    # object detection model
+    # object detection model // Example topic for annotated hands
     model_type = "yolo"
     model_name = "yolo11n.pt"  #'v5lite-c.pt'
     model = None
@@ -52,7 +52,7 @@ class ObjectDetector(PluginNode):
 
     # topic names
     image_raw_topic = "/camera/image_raw"  # raw image frames from the drone's camera
-    all_detected_topic = "/all_detected"  # image frames in which all persons (and specified objects) are detected
+    all_detected_topic = "/camera/all_detected"  # image frames in which all persons (and specified objects) are detected
     bounding_boxes_topic = "/all_bounding_boxes"  # list of person bounding boxes
 
     # ROS Subscriptions
