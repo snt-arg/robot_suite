@@ -100,6 +100,14 @@ class TelloController(PluginNode):
         throw_takeoff_pub = self.create_publisher(Empty, "/throw_and_go", 1)
         palm_land_pub = self.create_publisher(Empty, "/palm_land", 1)
 
+        ### For interface tetsing
+        self.llm_response_pub = self.create_publisher(String, "/llm_response", 1)
+        self.user_query = None
+        self.user_query_sub = self.create_subscription(
+            String, "/user_query", self.user_query_callback, 10
+        )
+        ### End for interface testing
+
         # Subscribers
         battery_sub = self.create_subscription(
             BatteryState, "/battery_state", self.battery_callback, 10
@@ -144,6 +152,9 @@ class TelloController(PluginNode):
                 )
             elif percent_0_to_100 >= 20.0:
                 self.warned_low_battery = False
+
+    def user_query_callback(self, msg: String):
+        self.user_query = msg.data
 
     def tracking_info_callback(self, msg: String):
         """
@@ -782,7 +793,8 @@ def palm_land() -> str:
 @tool
 def throw_and_go() -> str:
     """Command the robot to perform a throw takeoff. The drone must be on the hands of the user
-    and then physically thrown within a 5-second arming window to initiate flight."""  # MODIFIED: Docstring updated to reflect arming window.
+        and then physically thrown within a 5-secon
+    export function VideoContd arming window to initiate flight."""  # MODIFIED: Docstring updated to reflect arming window.
 
     pub = throw_takeoff_pubs.get(ROBOT_NAME)
     state_data = drone_states.get(ROBOT_NAME)
@@ -831,15 +843,18 @@ def print_response(query: str):
 
 
 async def submit(query: str):
-    await stream_response(query)
+    return await stream_response(query)
 
 
 async def stream_response(query: str):
     print(Fore.BLUE + Style.BRIGHT + f"\n👤 User: {query}\n")
 
+    response = ""
+
     async for event in rosa.astream(query):
         if event["type"] == "token":
             print(Fore.GREEN + event["content"], end="", flush=True)
+            response = response + event["content"]
         elif event["type"] == "tool_start":
             print(Fore.YELLOW + f"\n🛠️ Starting tool: {event['name']}")
         elif event["type"] == "tool_end":
@@ -851,39 +866,49 @@ async def stream_response(query: str):
         elif event["type"] == "error":
             print(Fore.RED + f"\n❌ Error: {event['content']}")
 
+    return response
+
 
 # Function to run the ROSA agent
-async def run():
+async def run(node):
     # Print the time when the session starts
     start_time_str = time.strftime("%Y-%m-%d %H:%M:%S")
     print(
         Fore.CYAN + Style.BRIGHT + f"\n--- ROSA Session Started at {start_time_str} ---"
     )
 
+    query = None
+
     while True:
-        # --- 1. Print the time BEFORE the prompt ---
-        prompt_time_str = time.strftime("%H:%M:%S")
-        # The '\n' adds a space before the new prompt, 'end=""' keeps the cursor on the same line
-        print(Fore.CYAN + f"\n[{prompt_time_str}] ", end="")
 
         # Get the user's command
-        query = input("Enter your prompt (or 'exit' to quit): ")
+        if node.user_query != query:
+            query = node.user_query
 
-        if query.lower() == "exit":
-            log.info("--- Session Ended ---")
-            break
+            # --- 1. Print the time BEFORE the prompt ---
+            prompt_time_str = time.strftime("%H:%M:%S")
+            # The '\n' adds a space before the new prompt, 'end=""' keeps the cursor on the same line
+            print(Fore.CYAN + f"\n[{prompt_time_str}] ", end="")
 
-        # Log the prompt to the file
-        log.info(f"USER_PROMPT: {query}")
+            # query = input("Enter your prompt (or 'exit' to quit): ")
 
-        # Start processing the command
-        processing_time_str = time.strftime("%H:%M:%S")
-        print(Fore.CYAN + f"[{processing_time_str}] Processing command...")
+            if query.lower() == "exit":
+                log.info("--- Session Ended ---")
+                break
 
-        await submit(query)
+            # Log the prompt to the file
+            log.info(f"USER_PROMPT: {query}")
 
-        processing_time_str = time.strftime("%H:%M:%S")
-        print(Fore.CYAN + f"[{processing_time_str}] Response received...")
+            # Start processing the command
+            processing_time_str = time.strftime("%H:%M:%S")
+            print(Fore.CYAN + f"[{processing_time_str}] Processing command...")
+
+            responseMsg = String()
+            responseMsg.data = await submit(query)
+            node.llm_response_pub.publish(responseMsg)
+
+            processing_time_str = time.strftime("%H:%M:%S")
+            print(Fore.CYAN + f"[{processing_time_str}] Response received...")
 
 
 # asyncio.run(run())
@@ -906,7 +931,7 @@ def main(args=None):
     spin_thread.start()
 
     try:
-        asyncio.run(run())
+        asyncio.run(run(node))
     except KeyboardInterrupt:
         pass
     finally:

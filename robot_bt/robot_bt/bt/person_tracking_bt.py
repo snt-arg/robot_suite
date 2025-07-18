@@ -59,10 +59,10 @@ class PersonTrackingBT(py_trees.composites.Sequence):
         )
 
         self.plugins_blackboard.selected_plugin = (
-            "landmark_detector_node"  # or "person_tracking"
+            "person_tracking"  # or "landmark_detector_node"
         )
 
-        self.plugins_blackboard.tracking_mode = "llm"  # or "hand"
+        self.plugins_blackboard.tracking_mode = "hand"  # or "llm"
 
     def build_tree(self):
         drone_connection = py_trees.composites.Selector(
@@ -117,7 +117,7 @@ class PersonTrackingBT(py_trees.composites.Sequence):
                     "PersonTrackingControl",
                     memory=False,
                     children=[
-                        CanRunPlugin("CanRpassunPersonTracking", "person_tracking"),
+                        CanRunPlugin("CanRunPersonTracking", "person_tracking"),
                         PluginClient(
                             "ObjectDetectorPlugin", "object_detector_node", self.node
                         ),

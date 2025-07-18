@@ -1,5 +1,8 @@
 {
   "dependencies": {
     "roslib": "^1.4.1"
+  },
+  "devDependencies": {
+    "rc-joystick": "^1.1.0"
   }
 }

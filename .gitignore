@@ -8,8 +8,8 @@ logs/
 drivers/
 
 # Other folders
-robot_station/
-node_modules/
+#robot_station/
+# node_modules/
 .vscode/
 
 # ML models

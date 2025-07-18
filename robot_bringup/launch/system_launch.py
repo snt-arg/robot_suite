@@ -108,18 +108,32 @@ def create_land_takeoff_plugin_launch(ld: LaunchDescription) -> None:
     )
 
 
+def create_robot_agent_plugin_launch(ld: LaunchDescription) -> None:
+    pkg_dir = get_package_share_directory("robot_bringup")
+    params_file = os.path.join(pkg_dir, "config", "params.yaml")
+    ld.add_action(
+        Node(
+            package="robot_agent",
+            executable="robot_agent",
+            parameters=[params_file],
+            prefix="gnome-terminal --",
+        )
+    )
+
+
 def generate_launch_description():
     ld = LaunchDescription()
 
     create_tello_driver_launch(ld)
     create_robot_bt_launch(ld)
-    create_tello_control_station_launch(ld)
+    # create_tello_control_station_launch(ld)
 
     # ------------------
     # -    Plugins     -
     # ------------------
 
     create_hand_tracker_plugin_launch(ld)
+    create_robot_agent_plugin_launch(ld)
     create_person_tracking_plugin_launch(ld)
     create_land_takeoff_plugin_launch(ld)
 
