@@ -101,10 +101,6 @@ class Tracker(PluginNode):
         # self.i = 0
         ### end test
 
-        ##test 2
-        self.test_counter_rotation = 0
-        ## end tst 2
-
     def _init_parameters(self) -> None:
         """Method to initialize parameters such as ROS topics' names"""
 
@@ -218,16 +214,18 @@ class Tracker(PluginNode):
 
             ### test to track someone without the llm and the hand gesture plugin
             """
-            if self.boxes is not None and self.boxes.bounding_boxes != []: 
+            if self.boxes is not None and self.boxes.bounding_boxes != []:
                 if self.i == 0:
                     self.tracking = True
                     bounding_boxes = copy(self.boxes.bounding_boxes)
-        
+
                     self.pilot_box = copy(bounding_boxes[0])
                     midpoint = calculate_midpoint_box(self.pilot_box)
 
-                    self.get_logger().info(f"\nTest found the pilot person indicated in the tracking signal. Midpoint : {midpoint}\n")
-                    
+                    self.get_logger().info(
+                        f"\nTest found the pilot person indicated in the tracking signal. Midpoint : {midpoint}\n"
+                    )
+
                     self.publisher_pilot.publish(self.pilot_box)
 
                     self.i += 1
@@ -512,41 +510,6 @@ class Tracker(PluginNode):
         Here we call callback functions to publish a detection frame and the list of bounding boxes.
         """
 
-        ##test 2
-        self.test_counter_rotation += 1
-        rotation_direction = "left"
-
-        print("test counter :", self.test_counter_rotation)
-
-        # if blackboard is not None:
-        # pass
-        #    print("\n","only blackboard: ",blackboard,"war","\n")
-        #    print("\n","blackboard attribute: ",blackboard["rotate_robot"],"war","\n")
-
-        """
-        if self.test_counter_rotation > 50 and self.test_counter_rotation < 60:
-            
-            blackboard["rotate_robot"] = {"rotation_direction":rotation_direction, "rotation_angle": self.rotation_angle,  "rotation_speed" : self.rotation_speed,"total_rotated_angle":0}
-            print("Returning Failure")
-            
-            return NodeState.FAILURE
-        elif self.test_counter_rotation > 300 and self.test_counter_rotation < 500:
-            if blackboard.get("rotate_robot") is not None:
-                current_angle = blackboard["rotate_robot"]["total_rotated_angle"] + self.rotation_angle
-            else:
-                current_angle = 0
-            blackboard["rotate_robot"] = {"rotation_direction":rotation_direction, "rotation_angle": self.rotation_angle,  "rotation_speed" : self.rotation_speed,"total_rotated_angle":current_angle}
-            
-
-            return NodeState.FAILURE
-        else:
-            print("Returning success")
-            return NodeState.SUCCESS
-
-        ## end test 2
-        
-        """
-
         self.pilot_callback()
         self.tracking_status_callback()
 
@@ -583,7 +546,7 @@ def main(args=None):
     rclpy.init(args=args)
 
     # Node instantiation
-    tracker = Tracker("pilot_person_tracker_node")
+    tracker = Tracker("tracker_node")
 
     # tracker.get_logger().set_level(rclpy.logging.LoggingSeverity.DEBUG)
 

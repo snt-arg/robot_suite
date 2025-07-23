@@ -84,6 +84,8 @@ def create_person_tracking_plugin_launch(ld: LaunchDescription) -> None:
             ),
             launch_arguments={
                 "params_file": params_file,
+                "run_associator": "true",
+                "use_compression": "true",
             }.items(),
         )
     )

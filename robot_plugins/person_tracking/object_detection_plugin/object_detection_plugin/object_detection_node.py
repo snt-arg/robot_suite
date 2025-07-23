@@ -272,7 +272,7 @@ class ObjectDetector(PluginNode):
         The image on which object detection has been performed (self.image_all_detected) is published on the topic '/all_detected'
         """
         if self.image_all_detected is None:
-            self.get_logger().info(
+            self.get_logger().debug(
                 "Can't publish frames on which object detection was performed.\n No image has been received from the drone yet"
             )
         else:
@@ -287,7 +287,7 @@ class ObjectDetector(PluginNode):
         A list of the coordinates of bounding boxes around persons detected on the frame is published.
         """
         if self.boxes is None:
-            self.get_logger().info(
+            self.get_logger().debug(
                 "Can't publish bounding boxes. No information received yet"
             )
         else:
@@ -327,7 +327,7 @@ def main(args=None):
     rclpy.init(args=args)
 
     # Node instantiation
-    detector = ObjectDetector("object_detector_node")
+    detector = ObjectDetector("object_detection_node")
 
     # execute the callback function until the global executor is shutdown
     rclpy.spin(detector)

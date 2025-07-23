@@ -32,7 +32,7 @@ from person_tracking_helpers.helpers import (
 ##NB : all directions : left, right... are from the drone's perspective
 
 
-class TrackPerson(PluginNode):
+class FollowingCommands(PluginNode):
 
     person_tracked_topic = "/person_tracked"  # carries the position of the tracked person (midpoint and box)
     commands_topic = "/cmd_vel"  # carries Twist msgs
@@ -448,16 +448,14 @@ class TrackPerson(PluginNode):
 def main(args=None):
     # Intialization ROS communication
     rclpy.init(args=args)
-    track_person = TrackPerson("following_commands_node")
+    followingCommands = FollowingCommands("following_commands_node")
 
     # track_person.get_logger().set_level(rclpy.logging.LoggingSeverity.DEBUG)
 
     # execute the callback function until the global executor is shutdown
-    rclpy.spin(track_person)
-
-    # track_person.video.release()
+    rclpy.spin(followingCommands)
 
     # destroy the node. It is not mandatory, since the garbage collection can do it
-    track_person.destroy_node()
+    followingCommands.destroy_node()
 
     rclpy.shutdown()

@@ -28,3 +28,8 @@ bt_server:
         bt_name: person_tracking_bt # default_bt 
         tick_freq: 60 # Hz
         stop_on_failure: false # Whether it should stop the tree from executing if the root fails.
+
+
+
+
+

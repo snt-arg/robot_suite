@@ -24,8 +24,6 @@ def create_object_detection_plugin_launch(
             ),
             launch_arguments={
                 "params_file": params_file,
-                "run_associator": "true",
-                "use_compression": "true",
             }.items(),
         )
     )
@@ -79,7 +77,6 @@ def create_drawer_plugin_launch(
             ),
             launch_arguments={
                 "params_file": params_file,
-                "use_compression": "true",
             }.items(),
         )
     )

@@ -119,7 +119,7 @@ class PersonTrackingBT(py_trees.composites.Sequence):
                     children=[
                         CanRunPlugin("CanRunPersonTracking", "person_tracking"),
                         PluginClient(
-                            "ObjectDetectorPlugin", "object_detector_node", self.node
+                            "ObjectDetectorPlugin", "object_detection_node", self.node
                         ),
                         py_trees.composites.Selector(
                             "CorrectModeControl",
@@ -131,11 +131,11 @@ class PersonTrackingBT(py_trees.composites.Sequence):
                                     children=[
                                         IsTrackingModeCorrect(
                                             "CheckLLMMode",
-                                            "person_object_association_node",
+                                            "associator_node",
                                         ),
                                         PluginClient(
                                             "PersonObjectAssociatorPlugin",
-                                            "person_object_association_node",
+                                            "associator_node",
                                             self.node,
                                         ),
                                     ],
@@ -171,7 +171,7 @@ class PersonTrackingBT(py_trees.composites.Sequence):
                                     children=[
                                         PluginClient(
                                             "TrackerPlugin",
-                                            "pilot_person_tracker_node",
+                                            "tracker_node",
                                             self.node,
                                         ),
                                         PluginClient(
