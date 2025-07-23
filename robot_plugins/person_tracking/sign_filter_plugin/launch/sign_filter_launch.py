@@ -15,12 +15,12 @@ def generate_launch_description():
         "params_file", default_value=str(default_params_file)
     )
 
-    params_file = LaunchConfiguration("params_file")
+    param_file = LaunchConfiguration("params_file")
 
     sign_filter_node = Node(
         package="sign_filter_plugin",
         executable="sign_filter_node",
-        parameters=[params_file],
+        parameters=[param_file],
     )
 
     ld = LaunchDescription()

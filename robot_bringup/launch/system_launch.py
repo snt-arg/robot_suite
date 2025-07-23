@@ -6,6 +6,8 @@ from launch import LaunchDescription
 from launch_ros.actions import Node
 from launch.actions import IncludeLaunchDescription
 from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.actions import DeclareLaunchArgument
+from launch.substitutions import LaunchConfiguration
 
 
 def create_tello_driver_launch(ld: LaunchDescription) -> None:
@@ -112,7 +114,15 @@ def create_land_takeoff_plugin_launch(ld: LaunchDescription) -> None:
 
 def create_robot_agent_plugin_launch(ld: LaunchDescription) -> None:
     pkg_dir = get_package_share_directory("robot_bringup")
-    params_file = os.path.join(pkg_dir, "config", "params.yaml")
+    default_params_file = os.path.join(pkg_dir, "config", "params.yaml")
+
+    parameters = DeclareLaunchArgument(
+        "params_file", default_value=str(default_params_file)
+    )
+
+    params_file = LaunchConfiguration("params_file")
+    ld.add_action(parameters)
+
     ld.add_action(
         Node(
             package="robot_agent",

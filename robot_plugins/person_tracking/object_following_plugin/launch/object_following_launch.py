@@ -15,18 +15,18 @@ def generate_launch_description():
         "params_file", default_value=str(default_params_file)
     )
 
-    params_file = LaunchConfiguration("params_file")
+    param_file = LaunchConfiguration("params_file")
 
     tracker_node = Node(
         package="object_following_plugin",
         executable="tracker_node",
-        parameters=[params_file],
+        parameters=[param_file],
     )
 
     commands_node = Node(
         package="object_following_plugin",
         executable="following_commands_node",
-        parameters=[params_file],
+        parameters=[param_file],
     )
 
     ld = LaunchDescription()

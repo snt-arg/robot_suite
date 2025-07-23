@@ -16,12 +16,12 @@ def generate_launch_description():
         "params_file", default_value=str(default_params_file)
     )
 
-    params_file = LaunchConfiguration("params_file")
+    param_file = LaunchConfiguration("params_file")
 
     object_detection_node = Node(
         package="object_detection_plugin",
         executable="object_detection_node",
-        parameters=[params_file],
+        parameters=[param_file],
     )
 
     run_associator_flag = DeclareLaunchArgument(
@@ -33,7 +33,7 @@ def generate_launch_description():
     person_association_node = Node(
         package="object_detection_plugin",
         executable="associator_node",
-        parameters=[params_file],
+        parameters=[param_file],
         condition=IfCondition(LaunchConfiguration("run_associator")),
     )
 
