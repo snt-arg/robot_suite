@@ -105,7 +105,9 @@ class PersonTrackingBT(py_trees.composites.Sequence):
                             memory=False,
                             children=[
                                 GesturesInterpreterAction(
-                                    "GesturesInterpreterAction", self.node
+                                    "GesturesInterpreterAction",
+                                    self.node,
+                                    False,
                                 ),
                                 py_trees.behaviours.Success("SuccessDummy"),
                             ],
@@ -157,6 +159,20 @@ class PersonTrackingBT(py_trees.composites.Sequence):
                                             "sign_filter_node",
                                             self.node,
                                         ),
+                                        py_trees.composites.Selector(
+                                            "GesturesInterpreterControlTracking",
+                                            memory=False,
+                                            children=[
+                                                GesturesInterpreterAction(
+                                                    "GesturesInterpreterTargetOnly",
+                                                    self.node,
+                                                    True,
+                                                ),
+                                                py_trees.behaviours.Success(
+                                                    "SuccessDummy2"
+                                                ),
+                                            ],
+                                        ),
                                     ],
                                 ),
                             ],
@@ -202,10 +218,10 @@ class PersonTrackingBT(py_trees.composites.Sequence):
             ],
         )
 
-        self.add_children([drone_connection, battery_checker, remote_operator, plugins])
+        # self.add_children([drone_connection, battery_checker, remote_operator, plugins])
 
         # test
-        # self.add_children([remote_operator, plugins])
+        self.add_children([remote_operator, plugins])
         # self.add_children([drone_connection, battery_checker, remote_operator])
         # test
 
