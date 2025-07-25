@@ -171,12 +171,12 @@ class FollowingCommands(PluginNode):
         """Method to initialize the control parameters, depending on the control method"""
 
         if self.control_method.lower() == "on/off":
-            self.lower_threshold_midpoint_to_rotate = 0.20
-            self.higher_threshold_midpoint_to_rotate = 0.8
+            self.lower_threshold_midpoint_to_rotate = 0.1
+            self.higher_threshold_midpoint_to_rotate = 0.7
 
             # self.threshold_midpoint = 0.5
-            self.lower_threshold_midpoint = 0.4
-            self.higher_threshold_midpoint = 0.6
+            self.lower_threshold_midpoint = 0.3
+            self.higher_threshold_midpoint = 0.7
 
             self.lower_threshold_box_size = 1
             self.higher_threshold_box_size = 1.1

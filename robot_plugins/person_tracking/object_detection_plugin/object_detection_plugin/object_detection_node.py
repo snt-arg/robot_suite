@@ -58,7 +58,7 @@ class ObjectDetector(PluginNode):
     minimum_prob = 0.4
 
     # Variable to perform object detection on only some frames
-    process_frames = 10
+    process_frames = 1
 
     # topic names
     image_raw_topic = "/camera/image_raw"  # raw image frames from the drone's camera

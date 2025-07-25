@@ -22,6 +22,7 @@ def generate_launch_description():
         package="drawer_plugin",
         executable="drawer_node",
         parameters=[param_file],
+        prefix="",
     )
 
     compression_flag = DeclareLaunchArgument(

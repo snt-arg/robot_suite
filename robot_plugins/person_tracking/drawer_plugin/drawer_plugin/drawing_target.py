@@ -69,6 +69,10 @@ class DrawTarget(Node):
         self.image_height = None
         self.image_width = None
 
+        self.update_time_raw = self.get_clock().now().nanoseconds
+
+        self.update_time_hands_annotated = self.get_clock().now().nanoseconds
+
     def _init_parameters(self) -> None:
         """Method to initialize parameters such as ROS topics' names"""
 
@@ -151,9 +155,20 @@ class DrawTarget(Node):
         self.get_logger().debug("Raw images received")
         self.image = self.cv_bridge.imgmsg_to_cv2(img_msg, "rgb8")
 
+        self.update_time_raw = self.get_clock().now().nanoseconds
+
         # Dimensions of the image. Useful to denormalise bounding box coordinates
         if self.image_height is None or self.image_width is None:
             self.image_height, self.image_width, _ = self.image.shape
+
+    def image_annotated_hands_callback(self, img_msg):
+        """Callback function for the subscriber node (to topic "/hand/annotated/image").
+        For each image frame, save it in a variable for processing"""
+
+        self.get_logger().debug("Annotated hands images received")
+
+        self.image_annotated_hands = self.cv_bridge.imgmsg_to_cv2(img_msg, "rgb8")
+        self.update_time_hands_annotated = self.get_clock().now().nanoseconds
 
     def person_tracked_listener_callback(self, msg):
         """Callback function for the subscriber node (to topic /person_tracked).
@@ -165,55 +180,108 @@ class DrawTarget(Node):
 
         self.pilot_box = msg
 
-    def image_annotated_hands_callback(self, img_msg):
-        """Callback function for the subscriber node (to topic "/hand/annotated/image").
-        For each image frame, save it in a variable for processing"""
-        self.get_logger().debug("Annotated hands images received")
-        self.image_annotated_hands = self.cv_bridge.imgmsg_to_cv2(img_msg, "rgb8")
-
     ######################### Publisher #####################################################################################################
     def drawing_person_tracked_callback(self):
-        """This methods is the callback function for the publisher of images where ONLY the target person is highlighted."""
-        image_drawn = self.draw_rectangle(self.image)
-        image_drawn_and_hands = self.draw_rectangle(self.image_annotated_hands)
-        if image_drawn is not None:
-            self.publisher_drawing.publish(
-                self.cv_bridge.cv2_to_imgmsg(image_drawn, "rgb8")
-            )
-            self.get_logger().debug("Publishing pilot person frames")
+        """This methods is the callback function for the publisher of images where
+        ONLY the target person is highlighted."""
 
-        if image_drawn_and_hands is not None:
-            self.publisher_drawing_and_hands.publish(
-                self.cv_bridge.cv2_to_imgmsg(image_drawn_and_hands, "rgb8")
-            )
-            self.get_logger().debug("Publishing pilot person and hands frames")
+        if self.get_clock().now().nanoseconds - self.update_time_raw < 1e8:
 
-    def draw_rectangle(self, raw_image):
-        if raw_image is not None and self.pilot_box is not None:
+            image_drawn = self.draw_rectangle(self.image)
+
+            if image_drawn is not None:
+                self.publisher_drawing.publish(
+                    self.cv_bridge.cv2_to_imgmsg(image_drawn, "rgb8")
+                )
+                self.get_logger().debug("Publishing pilot person frameNones")
+
+        else:
+            self.get_logger().warning(
+                "Haven't received raw frames since: "
+                + str((self.get_clock().now().nanoseconds - self.update_time_raw) / 1e9)
+                + " seconds",
+            )
+
+    def drawing_person_tracked_hands_callback(self):
+        """This methods is the callback function for the publisher of images where
+        ONLY the target person and HAND LANDMARKS are highlighted."""
+
+        if (
+            self.get_clock().now().nanoseconds - self.update_time_handsNone_annotated
+            < 1e8
+        ):
+            image_drawn_and_hands = self.draw_rectangle(self.image_annotated_hands)
+
+            if image_drawn_and_hands is not None:
+                self.publisher_drawing_and_hands.publish(
+                    self.cv_bridge.cv2_to_imgmsg(image_drawn_and_hands, "rgb8")
+                )
+                self.get_logger().debug("Publishing pilot person and hands frames")
+        else:
+            self.get_logger().warn(
+                "Haven't received hand annotated frames since: ",
+                str(
+                    (
+                        self.get_clock().now().nanoseconds
+                        - self.update_time_hands_annotated
+                    )
+                )
+                / 1e9,
+                " seconds",
+            )
+
+    def draw_rectangle(self, image):
+        if image is not None and self.pilot_box is not None:
 
             midpoint = calculate_midpoint_box(self.pilot_box)
 
-            top_left_point = (
-                round(self.pilot_box.top_left.x * self.image_width),
-                round(self.pilot_box.top_left.y * self.image_height),
+            top_left_point_x = round(self.pilot_box.top_left.x * self.image_width)
+            top_left_point_y = round(self.pilot_box.top_left.y * self.image_height)
+
+            bottom_right_point_x = round(
+                self.pilot_box.bottom_right.x * self.image_width
             )
-            bottom_right_point = (
-                round(self.pilot_box.bottom_right.x * self.image_width),
-                round(self.pilot_box.bottom_right.y * self.image_height),
-            )
-            cv2.rectangle(
-                raw_image, top_left_point, bottom_right_point, (86, 237, 81), 2
+
+            bottom_right_point_y = round(
+                self.pilot_box.bottom_right.y * self.image_height
             )
 
             circle_center = (
                 round(midpoint.x * self.image_width),
                 round(midpoint.y * self.image_height),
             )
-            cv2.circle(raw_image, circle_center, 20, (166, 237, 164), -1)
-            cv2.circle(raw_image, circle_center, 15, (118, 237, 114), -1)
-            cv2.circle(raw_image, circle_center, 10, (86, 237, 81), -1)
 
-            return raw_image
+            # Drawing box
+            cv2.rectangle(
+                image,
+                (top_left_point_x, top_left_point_y),
+                (bottom_right_point_x, bottom_right_point_y),
+                (86, 237, 81),
+                1,
+            )
+
+            # Drawing midpoint circle
+            cv2.circle(image, circle_center, 5, (86, 237, 81), -1)
+
+            # drawing text annotation container
+            cv2.rectangle(
+                image,
+                (top_left_point_x, top_left_point_y),
+                (top_left_point_x + 3, top_left_point_y + 3)(86, 237, 81),
+                -1,
+            )
+
+            # Box annotation
+            cv2.putText(
+                img=image,
+                text="Target",
+                org=(top_left_point_x + 1, top_left_point_y + 1),
+                fontScale=1.0,
+                color=(255, 255, 255),
+                thickness=2,
+            )
+
+            return image
 
         return None
 

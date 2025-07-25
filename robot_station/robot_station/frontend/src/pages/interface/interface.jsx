@@ -20,29 +20,102 @@ export function InterfacePage() {
     const [userQuery, setUserQuery] = useState("");
     const [robotName, setRobotName] = useState("tello");
 
-
-
     return (
         <>
-            <button className="change-display-button" onClick={() => setDisplayMode("raw")}>Raw Images</button>
-            <button className="change-display-button" onClick={() => setDisplayMode("annotatedHands")}>Annotated Hands</button>
-            <button className="change-display-button" onClick={() => setDisplayMode("allDetected")}>All Detected</button>
-            <button className="change-display-button" onClick={() => setDisplayMode("personTracked")}>Person Tracked</button>
-            <button className="change-display-button" onClick={() => setDisplayMode("personTrackedHands")}>Person tracked and Annotated Hands</button>
-            <VideoContainer displayMode={displayMode} />
+            <div className="page-content-div-interface">
+                <img src="/assets/exact_image.svg" />
+                <div className="header-div-interface">
+                    <span>
+                        <img src="niceSPot.jpg" alt="robot" />
+                    </span>
+                    <span>
+                        <img src="niceTello.jpg" alt="robot" />
+                    </span>
+                    <span>
+                        <img src="nicego1.jpg" alt="robot" />
+                    </span>
+                    <button onClick={() => setRobotName((s) => telloRobotName)}>
+                        Tello
+                    </button>
+                    <button onClick={() => setRobotName((s) => spotRobotName)}>
+                        Spot
+                    </button>
+                    <button onClick={() => setRobotName((s) => go1RobotName)}>
+                        Go1
+                    </button>
+                </div>
+                <div className="left-div-interface">
+                    <button
+                        className="futuristic-button change-button change-display-button"
+                        onClick={() => setDisplayMode("raw")}
+                    >
+                        Raw Images
+                    </button>
+                    <button
+                        className="futuristic-button change-button change-display-button"
+                        onClick={() => setDisplayMode("annotatedHands")}
+                    >
+                        Annotated Hands
+                    </button>
+                    <button
+                        className="futuristic-button change-button change-display-button"
+                        onClick={() => setDisplayMode("allDetected")}
+                    >
+                        All Detected
+                    </button>
+                    <button
+                        className="futuristic-button change-button change-display-button"
+                        onClick={() => setDisplayMode("personTracked")}
+                    >
+                        Person Tracked
+                    </button>
+                    <button
+                        className="futuristic-button change-button change-display-button"
+                        onClick={() => setDisplayMode("personTrackedHands")}
+                    >
+                        Person tracked and Annotated Hands
+                    </button>
+                </div>
 
-            <button className="change-plugin-button" onClick={() => setControlMode("keyboard")}>Keyboard</button>
-            <button className="change-plugin-button" onClick={() => setControlMode("joystick")}>Joystick</button>
-            <button className="change-plugin-button" onClick={() => setControlMode("llmAgent")}>Natural language</button>
-            <button className="change-plugin-button" onClick={() => setControlMode("handGesture")}>Hand gestures</button>
+                <div className="middle-div-interface">
+                    <VideoContainer displayMode={displayMode} />
+                </div>
 
+                <div className="right-div-interface">
+                    <button
+                        className="futuristic-button change-button change-plugin-button"
+                        onClick={() => setControlMode("keyboard")}
+                    >
+                        Keyboard
+                    </button>
+                    <button
+                        className="futuristic-button change-button change-plugin-button"
+                        onClick={() => setControlMode("joystick")}
+                    >
+                        Joystick
+                    </button>
+                    <button
+                        className="futuristic-button change-button change-plugin-button"
+                        onClick={() => setControlMode("llmAgent")}
+                    >
+                        Natural language
+                    </button>
+                    <button
+                        className="futuristic-button change-button change-plugin-button"
+                        onClick={() => setControlMode("handGesture")}
+                    >
+                        Hand gestures
+                    </button>
 
-            <SwitchPlugin controlMode={controlMode} />
+                    <SwitchPlugin controlMode={controlMode} />
+                </div>
 
-            <button onClick={() => setRobotName(s => telloRobotName)}>Tello</button>
-            <button onClick={() => setRobotName(s => spotRobotName)}>Spot</button>
-            <button onClick={() => setRobotName(s => go1RobotName)}>Go1</button>
-
+                <div className="controls-div-interface">
+                    <a href="/welcome" className="futuristic-button">
+                        <span>Go back</span>
+                    </a>
+                </div>
+            </div>
         </>
     );
 }

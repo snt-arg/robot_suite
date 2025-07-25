@@ -98,7 +98,7 @@ class Tracker(PluginNode):
         self.midpoint_queue = deque(maxlen=self.max_length_midpoint_queue)
 
         ### test
-        # self.i = 0
+        self.i = 0
         ### end test
 
     def _init_parameters(self) -> None:
@@ -213,7 +213,7 @@ class Tracker(PluginNode):
             self.boxes = boxes_msg
 
             ### test to track someone without the llm and the hand gesture plugin
-            """
+
             if self.boxes is not None and self.boxes.bounding_boxes != []:
                 if self.i == 0:
                     self.tracking = True
@@ -229,7 +229,7 @@ class Tracker(PluginNode):
                     self.publisher_pilot.publish(self.pilot_box)
 
                     self.i += 1
-            """
+
             ### end test
 
     ######################### Second subscriber ####################################################################################################

@@ -9,32 +9,32 @@ const slidesImg = [
 export function WelcomePage() {
     return (
         <>
-            <div className="page-content-div">
-                <div className="left-div">
-                    <div className="header-div">
+            <div className="page-content-div-welcome">
+                <div className="left-div-welcome">
+                    <div className="header-div-welcome">
                         <h1 className="main-title">Robot Station</h1>
                         <h2 className="second-level-title">
                             Robot suite video manager
                         </h2>
                     </div>
-                    <button className="futuristic-button">
-                        <a href="/interface">Go to interface</a>
-                    </button>
+                    <a href="/interface" className="futuristic-button">
+                        <span>Go to interface</span>
+                    </a>
 
-                    <button className="futuristic-button">
-                        <a href="/info/Spot">SPOT info</a>
-                    </button>
+                    <a href="/info/Spot" className="futuristic-button">
+                        <span>SPOT info</span>
+                    </a>
 
-                    <button className="futuristic-button">
-                        <a href="/info/Tello">Tello info</a>
-                    </button>
+                    <a href="/info/Tello" className="futuristic-button">
+                        <span>Tello info</span>
+                    </a>
 
-                    <button className="futuristic-button">
-                        <a href="/info/Go1">Go1 info</a>
-                    </button>
+                    <a href="/info/Go1" className="futuristic-button">
+                        <span>Go1 info</span>
+                    </a>
                 </div>
 
-                <div className="right-div">
+                <div className="right-div-welcome">
                     <div className="rotating-shape"></div>
                     <div className="carousel">
                         <Carousel slidesImg={slidesImg} />
