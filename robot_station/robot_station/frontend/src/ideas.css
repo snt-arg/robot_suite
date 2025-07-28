@@ -1,0 +1,506 @@
+
+
+/* From Uiverse.io by Smit-Prajapati */ 
+.button {
+  /* in scss with just one variable i can change opacity with rgba(variable, opacity) but in css it's not possible so i have used three seperate variables */
+  /* with hue-rotate color can be changed */
+  --main-color: rgb(46, 213, 115);
+  --main-bg-color: rgba(46, 213, 116, 0.36);
+  --pattern-color: rgba(46, 213, 116, 0.073);
+
+  /* change this rotation value */
+  filter: hue-rotate(0deg);
+
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.5rem;
+  background: radial-gradient(
+      circle,
+      var(--main-bg-color) 0%,
+      rgba(0, 0, 0, 0) 95%
+    ),
+    linear-gradient(var(--pattern-color) 1px, transparent 1px),
+    linear-gradient(to right, var(--pattern-color) 1px, transparent 1px);
+  background-size:
+    cover,
+    15px 15px,
+    15px 15px;
+  background-position:
+    center center,
+    center center,
+    center center;
+  border-image: radial-gradient(
+      circle,
+      var(--main-color) 0%,
+      rgba(0, 0, 0, 0) 100%
+    )
+    1;
+  border-width: 1px 0 1px 0;
+  color: var(--main-color);
+  padding: 1rem 3rem;
+  font-weight: 700;
+  font-size: 1.5rem;
+  transition: background-size 0.2s ease-in-out;
+}
+
+.button:hover {
+  background-size:
+    cover,
+    10px 10px,
+    10px 10px;
+}
+.button:active {
+  filter: hue-rotate(250deg);
+}
+
+
+
+
+
+/* From Uiverse.io by Navarog21 */ 
+button {
+  position: relative;
+  width: 11em;
+  height: 4em;
+  outline: none;
+  transition: 0.1s;
+  background-color: transparent;
+  border: none;
+  font-size: 13px;
+  font-weight: bold;
+  color: #ddebf0;
+}
+
+#clip {
+  --color: #2761c3;
+  position: absolute;
+  top: 0;
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+  border: 5px double var(--color);
+  box-shadow: inset 0px 0px 15px #195480;
+  -webkit-clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);
+}
+
+.arrow {
+  position: absolute;
+  transition: 0.2s;
+  background-color: #2761c3;
+  top: 35%;
+  width: 11%;
+  height: 30%;
+}
+
+#leftArrow {
+  left: -13.5%;
+  -webkit-clip-path: polygon(100% 0, 100% 100%, 0 50%);
+}
+
+#rightArrow {
+  -webkit-clip-path: polygon(100% 49%, 0 0, 0 100%);
+  left: 102%;
+}
+
+button:hover #rightArrow {
+  background-color: #27c39f;
+  left: -15%;
+  animation: 0.6s ease-in-out both infinite alternate rightArrow8;
+}
+
+button:hover #leftArrow {
+  background-color: #27c39f;
+  left: 103%;
+  animation: 0.6s ease-in-out both infinite alternate leftArrow8;
+}
+
+.corner {
+  position: absolute;
+  width: 4em;
+  height: 4em;
+  background-color: #2761c3;
+  box-shadow: inset 1px 1px 8px #2781c3;
+  transform: scale(1) rotate(45deg);
+  transition: 0.2s;
+}
+
+#rightTop {
+  top: -1.98em;
+  left: 91%;
+}
+
+#leftTop {
+  top: -1.96em;
+  left: -3.0em;
+}
+
+#leftBottom {
+  top: 2.10em;
+  left: -2.15em;
+}
+
+#rightBottom {
+  top: 45%;
+  left: 88%;
+}
+
+button:hover #leftTop {
+  animation: 0.1s ease-in-out 0.05s both changeColor8,
+  0.2s linear 0.4s both lightEffect8;
+}
+
+button:hover #rightTop {
+  animation: 0.1s ease-in-out 0.15s both changeColor8,
+  0.2s linear 0.4s both lightEffect8;
+}
+
+button:hover #rightBottom {
+  animation: 0.1s ease-in-out 0.25s both changeColor8,
+  0.2s linear 0.4s both lightEffect8;
+}
+
+button:hover #leftBottom {
+  animation: 0.1s ease-in-out 0.35s both changeColor8,
+  0.2s linear 0.4s both lightEffect8;
+}
+
+button:hover .corner {
+  transform: scale(1.25) rotate(45deg);
+}
+
+button:hover #clip {
+  animation: 0.2s ease-in-out 0.55s both greenLight8;
+  --color: #27c39f;
+}
+
+@keyframes changeColor8 {
+  from {
+    background-color: #2781c3;
+  }
+
+  to {
+    background-color: #27c39f;
+  }
+}
+
+@keyframes lightEffect8 {
+  from {
+    box-shadow: 1px 1px 5px #27c39f;
+  }
+
+  to {
+    box-shadow: 0 0 2px #27c39f;
+  }
+}
+
+@keyframes greenLight8 {
+  from {
+  }
+
+  to {
+    box-shadow: inset 0px 0px 32px #27c39f;
+  }
+}
+
+@keyframes leftArrow8 {
+  from {
+    transform: translate(0px);
+  }
+
+  to {
+    transform: translateX(10px);
+  }
+}
+
+@keyframes rightArrow8 {
+  from {
+    transform: translate(0px);
+  }
+
+  to {
+    transform: translateX(-10px);
+  }
+}
+
+
+
+
+
+
+@import url("https://fonts.googleapis.com/css?family=Roboto&display=swap");
+* {
+  box-sizing: border-box;
+}
+body {
+  width: 100vw;
+  height: 100vh;
+  background: #1d1e21;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.kave {
+  &-btn {
+    position: relative;
+    border: solid 1px rgba(0, 214, 252, 0.3);
+    background: none;
+    color: rgba(0, 214, 252, 0.5);
+    font-family: "Roboto", sans-serif;
+    text-transform: uppercase;
+    font-weight: normal;
+    letter-spacing: 1.8px;
+    width: 200px;
+    height: 70px;
+    padding: 0;
+    transition: all 0.25s ease;
+    outline: none;
+    &:before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 10%;
+      width: 60px;
+      height: 1px;
+      transform: translateY(-1px);
+      background: rgba(0, 214, 252, 1);
+      transition: all 0.25s ease;
+    }
+    &:after {
+      content: "";
+      position: absolute;
+      bottom: 0;
+      right: 10%;
+      width: 60px;
+      height: 1px;
+      transform: translateY(1px);
+      background: rgba(0, 214, 252, 1);
+      transition: all 0.25s ease;
+    }
+    &:hover {
+      box-shadow: 1px 1px 8px rgba(0, 214, 252, 0.3);
+      color: rgba(0, 214, 252, 1);
+      text-shadow: 0 0 8px rgba(0, 214, 252, 0.4);
+      &.kave-btn:before {
+        left: 0;
+        width: 20px;
+      }
+      &.kave-btn:after {
+        right: 0;
+        width: 20px;
+      }
+      .kave-line:before {
+        bottom: 0;
+      }
+      .kave-line:after {
+        top: 0;
+      }
+    }
+  }
+  &-line {
+    &:before {
+      content: "";
+      position: absolute;
+      bottom: 30%;
+      right: 0;
+      width: 1px;
+      height: 20px;
+      transform: translateX(1px);
+      background: rgba(0, 214, 252, 1);
+      transition: all 0.25s ease;
+    }
+    &:after {
+      content: "";
+      position: absolute;
+      top: 30%;
+      left: 0;
+      width: 1px;
+      height: 20px;
+      transform: translateX(-1px);
+      background: rgba(0, 214, 252, 1);
+      transition: all 0.25s ease;
+    }
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*@import "tailwindcss";
+@plugin "daisyui";*/
+
+
+
+:root {
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: light dark;
+  color: rgba(255, 255, 255, 0.87);
+  background-color: #242424;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  /* Your existing colors */
+  --violet-web-color: #ea7af4ff;
+  --fandango: #b43e8fff;
+  --grape: #6200b3ff;
+  --indigo: #3b0086ff;
+  --dark-purple: #290628ff;
+
+  --violet-web-color-hsl: hsla(295, 85%, 72%, 1);
+  --fandango-hsl: hsla(319, 49%, 47%, 1);
+  --grape-hsl: hsla(273, 100%, 35%, 1);
+  --indigo-hsl: hsla(266, 100%, 26%, 1);
+  --dark-purple-hsl: hsla(302, 74%, 9%, 1);
+
+  --violet-web-color-rgb: rgba(234, 122, 244, 1);
+  --fandango-rgb: rgba(180, 62, 143, 1);
+  --grape-rgb: rgba(98, 0, 179, 1);
+  --indigo-rgb: rgba(59, 0, 134, 1);
+  --dark-purple-rgb: rgba(41, 6, 40, 1);
+
+  --gradient-top: linear-gradient(0deg, var(--violet-web-color), var(--fandango), var(--grape), var(--indigo), var(--dark-purple));
+  --gradient-right: linear-gradient(90deg, var(--violet-web-color), var(--fandango), var(--grape), var(--indigo), var(--dark-purple));
+  --gradient-bottom: linear-gradient(180deg, var(--violet-web-color), var(--fandango), var(--grape), var(--indigo), var(--dark-purple));
+  --gradient-left: linear-gradient(270deg, var(--violet-web-color), var(--fandango), var(--grape), var(--indigo), var(--dark-purple));
+  --gradient-top-right: linear-gradient(45deg, var(--violet-web-color), var(--fandango), var(--grape), var(--indigo), var(--dark-purple));
+  --gradient-bottom-right: linear-gradient(135deg, var(--violet-web-color), var(--fandango), var(--grape), var(--indigo), var(--dark-purple));
+  --gradient-top-left: linear-gradient(225deg, var(--violet-web-color), var(--fandango), var(--grape), var(--indigo), var(--dark-purple));
+  --gradient-bottom-left: linear-gradient(315deg, var(--violet-web-color), var(--fandango), var(--grape), var(--indigo), var(--dark-purple));
+  --gradient-radial: radial-gradient(var(--violet-web-color), var(--fandango), var(--grape), var(--indigo), var(--dark-purple));
+
+  /* Font colors */
+  --font-white: #FFFFFF;
+  --font-light-gray: #CCCCCC;
+  --font-soft-lavender: #E9D4FF;
+  --font-pale-pink: #F8CCE8;
+
+  --font-charcoal: #222222;
+  --font-dark-gray: #444444;
+  --font-eggplant: #4B003F;
+
+  --font-gold: #FFD700;
+  --font-cyan: #00FFFF;
+}
+
+a {
+  font-weight: 500;
+  color: #646cff;
+  text-decoration: inherit;
+}
+a:hover {
+  color: #535bf2;
+}
+
+body {
+  margin: 0;
+  display: flex;
+  place-items: center;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+h1 {
+  font-size: 3.2em;
+  line-height: 1.1;
+}
+
+button {
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  background-color: #1a1a1a;
+  cursor: pointer;
+  transition: border-color 0.25s;
+}
+
+button{
+  width: 100px;
+    height: 100px;
+    background: url('button.png') no-repeat center center;
+    background-size: contain;
+    border: none;
+    cursor: pointer;
+    background-color: transparent; /* keep the button itself transparent */
+}
+button:hover {
+  border-color: #646cff;
+}
+button:focus,
+button:focus-visible {
+  outline: 4px auto -webkit-focus-ring-color;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    color: #213547;
+    background-color: #ffffff;
+  }
+  a:hover {
+    color: #747bff;
+  }
+  button {
+    background-color: #f9f9f9;
+  }
+}
+
+/* Inactive button style (default) */
+.buttonUnactive {
+  background-color: #ccc; /* Light gray */
+  color: #6c6c6c;
+  border-color:#333 ;
+}
+
+
+
+/* Active button style (when clicked) */
+.buttonActive {
+  border-color: lightgreen;  /* Green border when active */
+  border-width: 0.1cap;
+  background-color: rgb(203, 222, 192);  /* Ensure background stays white */
+  
+}
+
+button:hover {
+  opacity: 0.9;  /* Slightly reduce opacity on hover */
+}
+￼R
+.msg-sent {
+    background-color: #d1e7dd; /* light green */
+    padding: 8px;
+    margin: 5px;
+    border-radius: 12px;
+    text-align: right;
+    color: #1a1a1a;
+}
+
+.msg-received {
+    background-color: #f8d7da; /* light red */
+    padding: 8px;
+    margin: 5px;
+    border-radius: 12px;
+    text-align: left;
+    color: #1a1a1a;
+}
+
+

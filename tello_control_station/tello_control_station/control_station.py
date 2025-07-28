@@ -178,7 +178,7 @@ class ControlStation(Node):
             self.control_mode = "n"
             self.pg_interface.update_display_mode("n")
             self.key_pressed_publisher.publish(msg)
-            self.get_logger().info("control switched to natural lenguage")
+            self.get_logger().info("control switched to natural language")
             threading.Thread(target=self.nlp_terminal).start()
             return NodeState.SUCCESS
 

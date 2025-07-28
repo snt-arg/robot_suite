@@ -6,6 +6,8 @@ from launch import LaunchDescription
 from launch_ros.actions import Node
 from launch.actions import IncludeLaunchDescription
 from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.actions import DeclareLaunchArgument
+from launch.substitutions import LaunchConfiguration
 
 
 def create_tello_driver_launch(ld: LaunchDescription) -> None:
@@ -20,6 +22,7 @@ def create_tello_driver_launch(ld: LaunchDescription) -> None:
             ),
             launch_arguments={
                 "params_file": params_file,
+                "use_compression": "true",
             }.items(),
         )
     )
@@ -64,117 +67,68 @@ def create_hand_tracker_plugin_launch(ld: LaunchDescription) -> None:
             launch_arguments={
                 "params_file": params_file,
                 "run_annotator": "true",
+                "use_compression": "true",
             }.items(),
         )
     )
 
-def create_object_detection_plugin_launch(ld: LaunchDescription) -> None:
+
+def create_person_tracking_plugin_launch(ld: LaunchDescription) -> None:
     pkg_dir = get_package_share_directory("robot_bringup")
     params_file = os.path.join(pkg_dir, "config", "params.yaml")
-    object_detection_pck_dir = get_package_share_directory("object_detection_plugin")
+    person_tracking_pck_dir = get_package_share_directory("person_tracking_bringup")
     ld.add_action(
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(
-                os.path.join(object_detection_pck_dir, "launch/object_detection_launch.py")
+                os.path.join(
+                    person_tracking_pck_dir, "launch/person_tracking_launch.py"
+                )
             ),
             launch_arguments={
                 "params_file": params_file,
+                "run_associator": "true",
+                "use_compression": "true",
             }.items(),
         )
     )
-def create_person_object_association_plugin_launch(ld:LaunchDescription)-> None:
-    pkg_dir = get_package_share_directory("robot_bringup")
-    params_file = os.path.join(pkg_dir, "config", "params.yaml")
-    pck_dir = get_package_share_directory("person_object_association")
-    ld.add_action(
-        Node(
-            package='person_object_association',
-            executable='associator_node',
-            parameters=[params_file],)
-            #prefix='gnome-terminal --',)
-    )
 
-def create_object_following_plugin_launch(ld:LaunchDescription)-> None:
-    pkg_dir = get_package_share_directory("robot_bringup")
-    params_file = os.path.join(pkg_dir, "config", "params.yaml")
-    #pck_dir = get_package_share_directory("object_following_plugin")
-    ld.add_action(
-        Node(
-            package='object_following_plugin',
-            executable='tracker_node',
-            parameters=[params_file],)
-           # prefix='gnome-terminal --',)
-    )
-    ld.add_action(
-        Node(
-            package='object_following_plugin',
-            executable='following_commands_node',
-            parameters=[params_file],)
-            #prefix='gnome-terminal --',)
-    )
-    
-    #ld.add_action(
-    #    Node( package='object_following_plugin',
-    #        executable='collision_avoiding_node',
-    #        parameters=[params_file],
-    #        prefix='gnome-terminal --',)
-    #)
 
-def create_sign_filter_plugin_launch(ld:LaunchDescription)-> None:
+def create_land_takeoff_plugin_launch(ld: LaunchDescription) -> None:
     pkg_dir = get_package_share_directory("robot_bringup")
     params_file = os.path.join(pkg_dir, "config", "params.yaml")
-    #pck_dir = get_package_share_directory("sign_filter_plugin")
     ld.add_action(
         Node(
-            package='sign_filter_plugin',
-            executable='sign_filter_node',
-            parameters=[params_file],)
-            #prefix='gnome-terminal --',)
-    )
-    ld.add_action(
-        Node(
-            package='sign_filter_plugin',
-            executable='tello_sign_interpreter_node',
+            package="object_following_plugin",
+            executable="takeoff_node",
             parameters=[params_file],
         )
     )
-    
-
-def create_land_takeoff_plugin_launch(ld:LaunchDescription)-> None:
-    pkg_dir = get_package_share_directory("robot_bringup")
-    params_file = os.path.join(pkg_dir, "config", "params.yaml")
-    #pck_dir = get_package_share_directory("object_following_plugin")
     ld.add_action(
         Node(
-            package='object_following_plugin',
-            executable='takeoff_node',
-            parameters=[params_file],)
-            #prefix='gnome-terminal --',)
-    )
-    ld.add_action(
-        Node(
-            package='object_following_plugin',
-            executable='land_node',
+            package="object_following_plugin",
+            executable="land_node",
             parameters=[params_file],
         )
     )
 
-def create_video_interface_plugin_launch(ld:LaunchDescription)-> None:
+
+def create_robot_agent_plugin_launch(ld: LaunchDescription) -> None:
     pkg_dir = get_package_share_directory("robot_bringup")
-    params_file = os.path.join(pkg_dir, "config", "params.yaml")
-    #pck_dir = get_package_share_directory("object_following_plugin")
-    #ld.add_action(
-    #    Node(
-    #        package='video_interface_plugin',
-    #        executable='video_interface_node',
-    #        parameters=[params_file],)
-            #prefix='gnome-terminal --',)
-    #)
+    default_params_file = os.path.join(pkg_dir, "config", "params.yaml")
+
+    parameters = DeclareLaunchArgument(
+        "params_file", default_value=str(default_params_file)
+    )
+
+    params_file = LaunchConfiguration("params_file")
+    ld.add_action(parameters)
+
     ld.add_action(
         Node(
-            package='drawer_plugin',
-            executable='drawer_node',
+            package="robot_agent",
+            executable="robot_agent",
             parameters=[params_file],
+            prefix="gnome-terminal --",
         )
     )
 
@@ -184,18 +138,15 @@ def generate_launch_description():
 
     create_tello_driver_launch(ld)
     create_robot_bt_launch(ld)
-    #create_tello_control_station_launch(ld)
+    # create_tello_control_station_launch(ld)
 
     # ------------------
     # -    Plugins     -
     # ------------------
 
     create_hand_tracker_plugin_launch(ld)
-    create_object_detection_plugin_launch(ld)
-    create_person_object_association_plugin_launch(ld)
-    create_object_following_plugin_launch(ld)
-    create_sign_filter_plugin_launch(ld)
+    create_robot_agent_plugin_launch(ld)
+    create_person_tracking_plugin_launch(ld)
     create_land_takeoff_plugin_launch(ld)
-    create_video_interface_plugin_launch(ld)
 
     return ld
