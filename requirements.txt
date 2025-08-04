@@ -4,3 +4,4 @@ pillow==10.4.0
 py-trees==2.2.3
 pygame==2.6.1
 typing-extensions==4.12.2
+ultralytics==8.3.91

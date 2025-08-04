@@ -18,7 +18,7 @@ def create_bt_server_node(ld: LaunchDescription) -> None:
         executable="bt_server",
         parameters=[params_file],
         output="screen",
-        prefix='gnome-terminal --',
+        prefix="gnome-terminal --",
     )
 
     ld.add_action(argus_camera_node)

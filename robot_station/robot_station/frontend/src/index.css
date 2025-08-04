@@ -1,0 +1,492 @@
+
+@font-face {
+  font-family: "Kode Mono" ;
+  src: url('/assets/Kode_Mono/KodeMono-VariableFont_wght.ttf'),
+  url('/assets/Kode_Mono/static/KodeMono-SemiBold.ttf');
+}
+
+@font-face {
+  font-family: "Mokoto" ;
+  src: url('/assets/mokoto/Mokoto\ Demo.ttf'),
+}
+
+@font-face {
+  font-family:"Delius" ;
+  src: url('/assets/Delius/Delius-Regular.ttf'),
+  url('/assets/Indie_Flower,Roboto/Roboto/Roboto-VariableFont_wdth,wght.ttf');
+}
+
+@font-face {
+  font-family: "Oxanium";
+  src: url("/assets/Oxanium/Oxanium-VariableFont_wght.ttf");
+}
+:root {
+  font-family: "Kode Mono",'Lucida Console', monospace, sans-serif;
+  line-height: 1.5;
+  font-weight: 100;
+  font-size: 1.5vw;
+
+  color-scheme: light dark;
+  color: rgba(255, 255, 255, 0.87);
+  background: linear-gradient(130deg, #1d1e21 40%, #FFFFFF 40.1%, #1b0841 40.2% ); /*linear-gradient(0deg,#1b0841 0%, #1d1232 15%, #1e1e21 35%, #1d1e21 100%) ;*/
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  /* Your existing colors */
+  --violet-web-color: #ea7af4ff;
+  --fandango: #b43e8fff;
+  --grape: #6200b3ff;
+  --indigo: #3b0086ff;
+  --dark-purple: #290628ff;
+
+  --violet-web-color-hsl: hsla(295, 85%, 72%, 1);
+  --fandango-hsl: hsla(319, 49%, 47%, 1);
+  --grape-hsl: hsla(273, 100%, 35%, 1);
+  --indigo-hsl: hsla(266, 100%, 26%, 1);
+  --dark-purple-hsl: hsla(302, 74%, 9%, 1);
+
+  --violet-web-color-rgb: rgba(234, 122, 244, 1);
+  --fandango-rgb: rgba(180, 62, 143, 1);
+  --grape-rgb: rgba(98, 0, 179, 1);
+  --indigo-rgb: rgba(59, 0, 134, 1);
+  --dark-purple-rgb: rgba(41, 6, 40, 1);
+
+  --gradient-top: linear-gradient(0deg, var(--violet-web-color), var(--fandango), var(--grape), var(--indigo), var(--dark-purple));
+  --gradient-right: linear-gradient(90deg, var(--violet-web-color), var(--fandango), var(--grape), var(--indigo), var(--dark-purple));
+  --gradient-bottom: linear-gradient(180deg, var(--violet-web-color), var(--fandango), var(--grape), var(--indigo), var(--dark-purple));
+  --gradient-left: linear-gradient(270deg, var(--violet-web-color), var(--fandango), var(--grape), var(--indigo), var(--dark-purple));
+  --gradient-top-right: linear-gradient(45deg, var9ae7febfdc76(--violet-web-color), var(--fandango), var(--grape), var(--indigo), var(--dark-purple));
+  --gradient-bottom-right: linear-gradient(135deg, var(--violet-web-color), var(--fandango), var(--grape), var(--indigo), var(--dark-purple));
+  --gradient-top-left: linear-gradient(225deg, var(--violet-web-color), var(--fandango), var(--grape), var(--indigo), var(--dark-purple));
+  --gradient-bottom-left: linear-gradient(315deg, var(--violet-web-color), var(--fandango), var(--grape), var(--indigo), var(--dark-purple));
+  --gradient-radial: radial-gradient(var(--violet-web-color), var(--fandango), var(--grape), var(--indigo), var(--dark-purple));
+
+  /* Font colors */
+  --font-white: #FFFFFF;
+  --font-light-gray: #CCCCCC;
+  --font-soft-lavender: #E9D4FF;
+  --font-pale-pink: #F8CCE8;
+  --font-purple: #d4bdff;
+  --font-cyan: #00FFFF;
+
+  
+  
+  --font-eggplant: #4B003F;
+
+  --font-gold: #FFD700;
+  --font-gray: #222222;
+  --font-light-gray: #CCCCCC;
+  --font-dark-gray: #444444;
+  
+}
+
+.page-content-div-welcome{
+  margin: auto;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+  align-items: center;
+  height: 98vh;
+  width: 98vw;
+  flex-wrap: wrap;
+
+}
+.header-div-welcome{
+  order: 0;
+  width:100%;
+  height:20%;
+  overflow: hidden;
+  margin: auto;
+}
+
+.left-div-welcome{
+  order: 1;
+  width: 40%;
+  height: 100%;
+}
+
+.right-div-welcome{
+  order: 2;
+  width: 60%;
+  height: 100% ;
+  
+
+}
+
+.main-title{
+  color: var(--font-purple);
+  font-family: "Mokoto",'Lucida Console', monospace, sans-serif;
+  font-size: 3rem;
+  margin: 0%;
+}
+
+.second-level-title{
+font-size: x-large;
+font-family: "Kode Mono",'Lucida Console', monospace, sans-serif;
+font-weight: 100;
+font-optical-sizing: auto;
+font-style: normal;
+margin: 0%;
+}
+
+.futuristic-button {
+  display: block;
+  position: relative;
+  cursor: pointer; 
+  max-width: 50%;
+  margin: 8% 0% 8% 0%;
+  padding: 5% 0% 5% 0%;
+  text-decoration: none;
+  letter-spacing: 0.1vw;
+  text-align: center;
+  text-transform: uppercase;
+  border-width: 0.01vw;
+  border-style: solid ;
+  border-color: var(--font-dark-gray);
+  
+  background: transparent;
+
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  color: white;
+
+  transition: 0.5s;
+  
+}
+
+.futuristic-button:hover{
+  background: #1b0841;
+  color: var(--font-soft-lavender);
+  letter-spacing: 0.4vw;
+  box-shadow: 0vw 0vw 1vw var(--font-soft-lavender);
+  border-style: dotted ;
+  border-color: white;
+}
+
+
+.carousel{
+  width: 100%;
+  height: 100%;  
+  
+}
+@keyframes carouselItemIn {
+  0% {filter: blur(9px); transform: translate(-20vw, 0vw);}
+  10% {filter: blur(5px); }
+  20% {filter: blur(0);transform: translate(0vw, 0vw);}
+  90% {filter: blur(0px); transform: translate(0vw, 0vw);}
+}
+
+
+.carousel-item{
+  display: block;
+  animation-name: carouselItemIn;
+  animation-duration: 5s;
+  max-width: 100%;
+  height:100%;
+  margin: auto;
+}
+
+.carousel-item-hidden{
+  display: none;
+  max-width: 100%;
+  max-height: 100%;
+}
+
+@keyframes rotate {
+  0% {transform: rotate(0) ;}
+  100% {transform: rotate(360);}
+  
+}
+
+/*
+##########################################################################################################################
+                                               Interface CSS
+##########################################################################################################################
+*/
+
+.page-content-div-interface{
+  margin: auto;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+  align-items: center;
+  height: 98vh;
+  width: 98vw;
+  flex-wrap: wrap;
+
+  background-color: rgba(88, 88, 88, 0.453);
+  backdrop-filter: blur(30px);
+
+}
+.header-div-interface{
+  order: 0;
+  width:100%;
+  height:10%;
+  overflow: hidden;
+  margin: auto;
+
+}
+.left-div-interface{
+  order: 1;
+  width:9%;
+  height:70%;
+  overflow: hidden;
+  margin: auto;
+
+}
+
+.video-div{
+  order: 2;
+  width:80%;
+  height:70%;
+  overflow:scroll;
+  margin: auto;
+  background: radial-gradient( rgb(44, 44, 44) 20%, black 70%);
+  border-color: #6d6d6d ;
+  border-width: 0.5%;
+  border-style: solid;
+
+}
+
+.video-div img{
+  
+  display: inline-block;
+  margin: auto;
+  width:100%;
+  
+}
+
+
+
+.right-div-interface{
+  order: 3;
+  width:10%;
+  height:70%;
+  overflow: hidden;
+  margin: auto;
+
+}
+
+.controls-div-interface{
+  order: 4;
+  width:100%;
+  height:20%;
+  overflow:hidden;
+  margin: auto;
+  display:flex;
+  align-items: center;
+}
+
+
+.change-button{
+  width: 99%;
+  max-width: 99%;
+  overflow: hidden;
+  margin: 8% 0% 8% 0%;
+  padding: 5% 0% 5% 0%;
+  font-size: 0.5em;
+  letter-spacing: 0.1em;
+  text-transform: none;
+
+}
+
+.change-display-button{
+  
+  background-color: #4B003F;
+}
+
+
+.change-plugin-button{
+  background-color: #370150;
+
+}
+
+
+.controls-div-interface .futuristic-button {
+  max-width:10%;
+  padding: 1% 0% 1% 0%;
+  margin: 0;
+  background-color: #1d1e21;
+  
+}
+
+.keyboard-control{
+
+}
+
+.joystick-control{
+  display: inline-flex;
+
+  width:70%;
+  margin: auto;
+}
+
+.joystick-left{
+  display: inline-block;
+  margin-right: 30%;
+ 
+
+}
+
+.joystick-right{
+  display: inline-block;
+  margin-left: 30%;
+  
+
+}
+
+
+
+.hand-control{
+  position:absolute;
+  top:11%;
+  right:11%;
+  opacity: 70%;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.hand-control img{
+ width: 60%;
+}
+
+
+.llm-control{
+  width: 90%;
+  display: flex;
+  margin: auto;
+  
+}
+.input-div{
+  display: block;
+  margin: auto;
+  max-width: 100%;
+  max-height: fit-content;
+  padding: auto;
+  
+
+
+}
+
+.input-div textarea{
+  resize: none;
+  width: 100%;
+  font-family: "Delius", Verdana, Geneva, Tahoma, sans-serif;
+  letter-spacing: 0.2vw;
+
+}
+
+
+.submit-button{
+  max-width:30%;
+  max-height: fit-content;
+  width:fit-content;
+  height: 100%;
+
+  margin: auto;
+  padding: auto;
+
+  display: inline-block;
+  cursor: pointer; 
+  
+  text-decoration: none;
+  letter-spacing: 0.01vw;
+  text-align: center;
+  border-width: 0.01vw;
+  border-style: solid ;
+  border-color: var(--font-dark-gray);
+  
+  background: #07441588!important;
+  
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  color: white;
+
+  transition: 0.5s;
+}
+
+.submit-button:hover{
+  background: #0f8328;
+  color: white ;
+  letter-spacing: 0.4vw;
+  box-shadow: 0vw 0vw 1vw rgb(175, 255, 192);
+  border-style: dashed;
+  border-color: white;
+}
+
+.chat-area{
+  position:absolute;
+  top:11%;
+  right:11%;
+  background-color: #370150a9;
+  width:20%;
+  height:65%;
+  border-radius: 5%;
+  overflow: scroll;
+  
+  
+
+}
+
+.chat-area p{
+  display: block;
+  margin: auto;
+  text-align: center;
+}
+
+.chat-area ul{
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-evenly;
+  flex-direction: column;
+  overflow: scroll;
+  width: 100%;
+  list-style-type: none;
+  padding: 0%;
+  
+
+}
+
+.msg-sent{
+  max-width:80%;
+  max-height: fit-content;
+  flex-grow: 1.5;
+  text-align: left;
+  align-self: self-end;
+  border-radius: 20%;
+  background-color: #ffa1b560;
+  padding: 1%;
+  font-size: 1vw;
+  font-family:"Delius", Verdana, Geneva, Tahoma, sans-serif;
+  margin-right:2%;
+  letter-spacing: 0.1vw;
+  overflow-wrap: break-word;
+  margin-bottom: 1%;
+  
+}
+.msg-sent::after{
+  content: ' <:🧑';
+}
+
+.msg-received{
+  max-width:80%;
+  max-height: fit-content;
+  flex-grow: 1.5;
+  background-color:#59a7ffab ;
+  border-radius:10%;
+  padding: 1%;
+  font-size: 1.2vw;
+  font-family:"Oxanium", Verdana, Geneva, Tahoma, sans-serif;
+  margin-left:2%;
+  overflow-wrap: break-word;
+  margin-bottom: 1%;
+}
+.msg-received::before{
+  content: '🤖:> ';
+
+}
