@@ -11,25 +11,26 @@ RUN apt update && \
     ros-$ROS_DISTRO-image-transport
 
 # Copy Robot Suite
-COPY . /workspace/robot_suite
+COPY . /workspace/src/robot_suite
 
-WORKDIR /workspace/robot_suite
+WORKDIR /workspace/src/robot_suite
 SHELL ["/bin/bash", "-c"]
-RUN ./bootstrap.sh tello
+RUN ./bootstrap.sh spot
 
 RUN echo "source /opt/ros/humble/setup.bash" >> ~/.bashrc
-RUN echo "source /workspace/robot_suite/install/setup.bash" >> ~/.bashrc
+RUN echo "source /workspace/install/setup.bash" >> ~/.bashrc
 
 
 # Build Entrypoint
 
 RUN echo "#!/bin/bash" >> /entrypoint.sh \
     && echo "source /opt/ros/humble/setup.bash" >> /entrypoint.sh \
-    && echo "source /workspace/robot_suite/install/setup.bash" >> /entrypoint.sh \
+    && echo "source /workspace/install/setup.bash" >> /entrypoint.sh \
     && echo 'exec "$@"' >> /entrypoint.sh \
     && chmod a+x /entrypoint.sh
 
-WORKDIR /workspace/robot_suite
+WORKDIR /workspace/src/robot_suite
 
 ENTRYPOINT ["/entrypoint.sh"]
 CMD ["bash"]
+

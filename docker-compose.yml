@@ -7,6 +7,22 @@ services:
             dockerfile: ./docker/tello/Dockerfile
         environment:
             - DISPLAY=${DISPLAY}
+            - RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+        volumes:
+            - /tmp/.X11-unix:/tmp/.X11-unix
+        network_mode: "host"
+        tty: true
+        stdin_open: true
+        command: "ros2 launch robot_bringup system_launch.py"
+    spot_suite:
+        image: robot_suite:spot
+        container_name: spot_suite
+        build:
+            context: .
+            dockerfile: ./docker/spot/Dockerfile
+        environment:
+            - DISPLAY=${DISPLAY}
+            - RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
         volumes:
             - /tmp/.X11-unix:/tmp/.X11-unix
         network_mode: "host"
