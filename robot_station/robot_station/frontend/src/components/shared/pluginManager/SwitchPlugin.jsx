@@ -45,7 +45,7 @@ export function SwitchPlugin({
                 <JoystickControl robotName={robotName} />
             )}
 
-            {controlMode === "llmAgent" && <LlmControl />}
+            {controlMode === "llmAgent" && <LlmControl robotName={robotName} />}
 
             {controlMode === "handGesture" && (
                 <img src="/assets/handGestureGuide.jpg" alt="Gesture guide" />

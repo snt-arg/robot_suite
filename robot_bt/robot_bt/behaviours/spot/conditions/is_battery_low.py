@@ -15,7 +15,9 @@ class IsBatteryLow(Action):
         )
 
     def battery_callback(self, msg: BatteryStateArray):
-        self.current_battery = sum([state.charge_percentage for state in msg.battery_states])/len(msg.battery_states)
+        self.current_battery = sum(
+            [state.charge_percentage for state in msg.battery_states]
+        ) / len(msg.battery_states)
 
     def update(self) -> py_trees.common.Status:
         if self.current_battery < self.low_battery_threshold:

@@ -10,7 +10,7 @@ const userQueryTopic = "/user_query";
 const llmResponseTopic = "/llm_response";
 const stringMessageType = "/std_msgs/msg/String";
 
-export function LlmControl() {
+export function LlmControl({ robotName }) {
     const publish = useRosPub(userQueryTopic, stringMessageType);
     const subscriber = useRosSub(llmResponseTopic, stringMessageType, 1);
 

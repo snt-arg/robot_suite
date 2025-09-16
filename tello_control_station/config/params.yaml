@@ -3,10 +3,10 @@ remote_controller:
     accepted_keys: "w a s d t l q m h f"
     accepted_mods: []
     matching_keys: []
-    cmd_topic_name: "/cmd_vel"
+    cmd_topic_name: "/byte/cmd_vel" #"/cmd_vel"
     key_pressed_topic_name: "/key_pressed"
     battery_level_topic_name: "/flight_data"
-    cam_image_topic_name: "/camera/image_raw"
+    cam_image_topic_name: "/camera/camera/color/image_raw/" #"/camera/image_raw"
     takeoff_topic_name: "/takeoff"
     land_topic_name: "/land"
 

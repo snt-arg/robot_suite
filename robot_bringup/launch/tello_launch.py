@@ -160,6 +160,16 @@ def create_rosbridge_server_launch(ld: LaunchDescription) -> None:
     )
 
 
+def create_tello_control_station_launch(ld: LaunchDescription) -> None:
+    ld.add_action(
+        Node(
+            package="tello_control_station",
+            executable="control_station",
+            output="screen",
+        )
+    )
+
+
 def generate_launch_description():
     ld = LaunchDescription()
 
@@ -167,6 +177,7 @@ def generate_launch_description():
     create_robot_bt_launch(ld)
     create_rosbridge_server_launch(ld)
     create_video_interface_launch(ld)
+    # create_tello_control_station_launch(ld)
 
     # ------------------
     # -    Plugins     -

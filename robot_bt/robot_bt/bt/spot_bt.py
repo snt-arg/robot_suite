@@ -2,7 +2,7 @@ from robot_bt.behaviours.shared.actions import PluginClient
 from robot_bt.behaviours.shared.conditions import CanRunPlugin
 from robot_bt.behaviours.spot.conditions.is_robot_connected import IsRobotConnected
 
-# from robot_bt.behaviours.spot.conditions.is_battery_low import IsBatteryLow
+from robot_bt.behaviours.spot.conditions.is_battery_low import IsBatteryLow
 
 from robot_bt.behaviours.spot.actions import SitAction
 from robot_bt.behaviours.tello.actions import RemoteOperator
@@ -76,18 +76,18 @@ class SpotBT(py_trees.composites.Sequence):
             ],
         )
 
-        # battery_checker = py_trees.composites.Selector(
-        #     "BatteryChecker",
-        #     memory=False,
-        #     children=[
-        #         py_trees.decorators.Inverter(
-        #             "IsBAtteryLowInverter", IsBatteryLow("IsBatteryLow", self.node)
-        #         ),
-        #         py_trees.decorators.Inverter(
-        #             "SitActionInverter", SitAction("SitAction", self.node)
-        #         ),
-        #     ],
-        # )
+        battery_checker = py_trees.composites.Selector(
+            "BatteryChecker",
+            memory=False,
+            children=[
+                py_trees.decorators.Inverter(
+                    "IsBAtteryLowInverter", IsBatteryLow("IsBatteryLow", self.node)
+                ),
+                py_trees.decorators.Inverter(
+                    "SitActionInverter", SitAction("SitAction", self.node)
+                ),
+            ],
+        )
 
         remote_operator = RemoteOperator("RemoteOperator", self.node)
 

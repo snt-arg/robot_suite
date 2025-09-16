@@ -32,9 +32,10 @@ export function KeyboardControl({ robotName }) {
                 if (command !== null && command !== undefined) {
                     publish(command);
                 }
-            } else {
-                robotToSpecificInterpreter[robotName](key, baseVelocity);
             }
+            // else {
+            //     robotToSpecificInterpreter[robotName](key, baseVelocity);
+            // }
         };
 
         window.addEventListener("keydown", keyboardCommandHandler);
