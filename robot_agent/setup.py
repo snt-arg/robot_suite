@@ -20,8 +20,6 @@ setup(
     entry_points={
         "console_scripts": [
             "robot_agent_node = robot_agent.llm_agent:main",
-            "spot_controller_node = robot_agent.spot_controller:main",
-            "tello_controller_node = robot_agent.tello_controller:main",
         ],
     },
 )
