@@ -30,7 +30,7 @@ log.setLevel(logging.INFO)  # Set the minimum level of messages to record
 
 # Create a file handler to write logs to a file named 'interaction_log.txt'
 file_handler = logging.FileHandler("interaction_log.txt")
-
+n
 # Create a formatter to define the log message format (timestamp - level - message)
 formatter = logging.Formatter(
     "%(asctime)s - %(levelname)s - %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
@@ -45,7 +45,6 @@ from rclpy.publisher import Publisher
 
 
 tracking_confirmation_received = threading.Event()
-last_published_data = None
 
 load_dotenv()  # This loads the variables from .env file
 
