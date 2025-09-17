@@ -123,8 +123,6 @@ class SpotController(Node):
         self.current_tracking_object = None
         self.tracking_status = None
 
-        self.tracking_confirmation_received = threading.Event()
-
         # Initialize ROS node
         self._init_parameters()
         self._init_publishers()
@@ -133,7 +131,7 @@ class SpotController(Node):
 
     ########################################## Initialization Methods ############################################################################
     def _init_parameters(self) -> None:
-        """Method to initialize parameters such as ROS topics' names"""
+        """Method to initialize parameters such as ROS topics' names from config file"""
         self.declare_parameter("commands_topic", self.commands_topic)
         self.declare_parameter("key_pressed_topic", self.key_pressed_topic)
         self.declare_parameter("switch_mode_topic", self.switch_mode_topic)
