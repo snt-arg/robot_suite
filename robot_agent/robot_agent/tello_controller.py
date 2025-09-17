@@ -1,5 +1,5 @@
 from dotenv import load_dotenv
-
+from rosa import RobotSystemPrompts
 
 from langchain.agents import tool
 from std_msgs.msg import String, Empty
@@ -41,8 +41,6 @@ from rclpy.publisher import Publisher
 
 load_dotenv()  # This loads the variables from .env file
 
-
-ROBOT_NAME = "tello"
 
 FLY_MODE_STATE_MAP = {
     0: "ground",
@@ -91,7 +89,7 @@ class TelloController(Node):
     tracking_signal_topic = "/tracking_signal"  # Topic on which th signal to track a specific person is sent
     person_info_topic = "/tracking_info"  # Topic on which information about detected persons and objects are sent
 
-    def __init__(self):
+    def __init__(self, robot_name: str = "tello"):
         super().__init__("tello_controller")
         self.warned_low_battery = False
 
@@ -113,6 +111,10 @@ class TelloController(Node):
         # variables
         self.current_tracking_object = None
         self.tracking_confirmation_received = threading.Event()
+
+        self.current_state_data = None
+        self.battery_state = None
+        self.robot_name = robot_name
 
         # Initialize ROS node
         self._init_parameters()
@@ -214,19 +216,16 @@ class TelloController(Node):
 
     def battery_callback(self, msg: BatteryState):
         if msg.percentage is not None:
-            percent_0_to_100 = msg.percentage
+            self.battery_state = msg.percentage
 
-            if 10.0 <= percent_0_to_100 < 20.0 and not self.warned_low_battery:
+            if 10.0 <= self.battery_state < 20.0 and not self.warned_low_battery:
                 self.warned_low_battery = True
                 self.get_logger().warn(
-                    f"Battery for {ROBOT_NAME} is at {percent_0_to_100:.1f}%. "
+                    f"Battery for {self.robot_name} is at {self.battery_state:.1f}%. "
                     "Consider landing soon."
                 )
-            elif percent_0_to_100 >= 20.0:
+            elif self.battery_state >= 20.0:
                 self.warned_low_battery = False
-
-    def user_query_callback(self, msg: String):
-        self.user_query = msg.data
 
     def tracking_info_callback(self, msg: String):
         """
@@ -274,7 +273,7 @@ class TelloController(Node):
             self.get_logger().error(f"Error in tracking_info_callback: {e}")
 
     def drone_state_callback(self, msg: FlightStats):
-        current_state_data = {
+        self.current_state_data = {
             "em_sky": msg.em_sky,
             "fly_mode": msg.fly_mode,
             "height": msg.height,
@@ -289,26 +288,24 @@ class TelloController(Node):
         time_str = datetime.now().strftime("%H:%M:%S:%f")
         print(Fore.CYAN + f"[{time_str}] Start takeoff tool time..")
 
-        pub = takeoff_pubs.get(ROBOT_NAME)
-        state_data = drone_states.get(ROBOT_NAME)
-        if not pub:
-            return f"No takeoff publisher found for {ROBOT_NAME}"
+        state_data = self.current_state_data
+
         current_physical_state = "unknown"
         if state_data and "physical_state" in state_data:
             current_physical_state = state_data["physical_state"]
         if current_physical_state != "ground":
             if state_data is None:
-                return f"Drone state for {ROBOT_NAME} is not yet known. Cannot takeoff."
-            return f"{ROBOT_NAME} is not on the ground. Current state: '{current_physical_state}'. Cannot takeoff."
+                return f"Drone state for {self.robot_name} is not yet known. Cannot takeoff."
+            return f"{self.robot_name} is not on the ground. Current state: '{current_physical_state}'. Cannot takeoff."
         try:
-            pub.publish(Empty())
+            self.takeoff_pub.publish(Empty())
 
             time_str = datetime.now().strftime("%H:%M:%S:%f")
             print(Fore.CYAN + f"[{time_str}] End takeoff tool time..")
 
-            return f"{ROBOT_NAME} is taking off."
+            return f"{self.robot_name} is taking off."
         except Exception as e:
-            return f"Failed to take off {ROBOT_NAME}: {e}"
+            return f"Failed to take off {self.robot_name}: {e}"
 
     def move(self, linear: List[float], angular: float, duration: int) -> str:
         """
@@ -336,20 +333,15 @@ class TelloController(Node):
         time_str = datetime.now().strftime("%H:%M:%S:%f")
         print(Fore.CYAN + f"[{time_str}] Start motion time..")
 
-        pub = cmd_vel_pubs.get(ROBOT_NAME)
-        state_data = drone_states.get(ROBOT_NAME)
-        if not pub:
-            return f"No cmd_vel publisher found for {ROBOT_NAME}"
-
         # (All of your safety checks for state, height, etc. are correct and remain here)
-        if not state_data:
-            return f"Drone state for {ROBOT_NAME} is not yet known. Cannot move."
-        current_physical_state = state_data.get("physical_state")
-        current_height = state_data.get("height")
+        if not self.current_state_data:
+            return f"Drone state for {self.robot_name} is not yet known. Cannot move."
+        current_physical_state = self.current_state_data.get("physical_state")
+        current_height = self.current_state_data.get("height")
         if current_physical_state != "air":
-            return f"{ROBOT_NAME} is not in the air. Current state: '{current_physical_state}'. Cannot move."
+            return f"{self.robot_name} is not in the air. Current state: '{current_physical_state}'. Cannot move."
         if current_height is not None and current_height < 8 and linear[2] < 0:
-            return f"{ROBOT_NAME} is too low (height: {current_height} dm) to move further down. Height must be at least 8 dm."
+            return f"{self.robot_name} is too low (height: {current_height} dm) to move further down. Height must be at least 8 dm."
 
         try:
             msg_twist = Twist()
@@ -366,19 +358,19 @@ class TelloController(Node):
             )
 
             while time.time() - start_time < duration:
-                pub.publish(msg_twist)
+                self.vel_pub.publish(msg_twist)
                 time.sleep(sleep_interval)
 
             # Send a final command to stop the drone
-            pub.publish(Twist())
+            self.vel_pub.publish(Twist())
 
             # time stamp
             time_str = datetime.now().strftime("%H:%M:%S:%f")
             print(Fore.CYAN + f"[{time_str}] End motion time..")
 
-            return f"Moved {ROBOT_NAME} with linear={linear}, angular={angular} for {duration}s and then stopped."
+            return f"Moved {self.robot_name} with linear={linear}, angular={angular} for {duration}s and then stopped."
         except Exception as e:
-            return f"Failed to move {ROBOT_NAME}: {e}"
+            return f"Failed to move {self.robot_name}: {e}"
 
     def land(self) -> str:
         """Command the robot to land and transition from air to ground. It cannot be used if the robot is already on the ground."""
@@ -387,29 +379,27 @@ class TelloController(Node):
         time_str = datetime.now().strftime("%H:%M:%S:%f")
         print(Fore.CYAN + f"[{time_str}] Start landing time..")
 
-        pub = land_pubs.get(ROBOT_NAME)
-        state_data = drone_states.get(ROBOT_NAME)
-        if not pub:
-            return f"No land publisher found for {ROBOT_NAME}"
         current_physical_state = "unknown"
-        if state_data and "physical_state" in state_data:
-            current_physical_state = state_data["physical_state"]
+        if self.current_state_data and "physical_state" in self.current_state_data:
+            current_physical_state = self.current_state_data["physical_state"]
         if current_physical_state != "air":
             if current_physical_state == "ground":
-                return f"{ROBOT_NAME} is already on the ground. Current state: '{current_physical_state}'. Cannot land."
-            elif state_data is None:
-                return f"Drone state for {ROBOT_NAME} is not yet known. Cannot land."
-            return f"{ROBOT_NAME} is not in the air. Current state: '{current_physical_state}'. Cannot land."
+                return f"{self.robot_name} is already on the ground. Current state: '{current_physical_state}'. Cannot land."
+            elif self.current_state_data is None:
+                return (
+                    f"Drone state for {self.robot_name} is not yet known. Cannot land."
+                )
+            return f"{self.robot_name} is not in the air. Current state: '{current_physical_state}'. Cannot land."
         try:
-            pub.publish(Empty())
+            self.land_pub.publish(Empty())
 
             # time stamp
             time_str = datetime.now().strftime("%H:%M:%S:%f")
             print(Fore.CYAN + f"[{time_str}] End landing time..")
 
-            return f"{ROBOT_NAME} is landing."
+            return f"{self.robot_name} is landing."
         except Exception as e:
-            return f"Failed to land {ROBOT_NAME}: {e}"
+            return f"Failed to land {self.robot_name}: {e}"
 
     def flip(self, direction: str) -> str:
         """Command the drone to perform a flip in the specified direction. If the direction is not provided, by default, forward. Valid directions: 'forward', 'backward', 'left', 'right'.
@@ -422,41 +412,38 @@ class TelloController(Node):
         time_str = datetime.now().strftime("%H:%M:%S:%f")
         print(Fore.CYAN + f"[{time_str}] Start flip time..")
 
-        state_data = drone_states.get(ROBOT_NAME)
-        battery_level = battery_levels.get(ROBOT_NAME)
+        state_data = self.current_state_data
+        battery_level = self.battery_state
 
         if not state_data:
-            return f"Drone state for {ROBOT_NAME} is not yet known. Cannot flip."
+            return f"Drone state for {self.robot_name} is not yet known. Cannot flip."
         current_physical_state = state_data.get("physical_state")
         current_height = state_data.get("height")
         current_fly_mode = state_data.get("fly_mode")
         current_em_sky = state_data.get("em_sky")
 
         if current_physical_state != "air":
-            return f"{ROBOT_NAME} is not in the air. Current state: '{current_physical_state}'. Cannot flip."
+            return f"{self.robot_name} is not in the air. Current state: '{current_physical_state}'. Cannot flip."
 
         if current_height is None:
-            return f"Drone height for {ROBOT_NAME} is unknown. Cannot flip."
+            return f"Drone height for {self.robot_name} is unknown. Cannot flip."
         if current_height < 8:
-            return f"{ROBOT_NAME} is too low (height: {current_height} dm). Height must be at least 8 dm to flip."
+            return f"{self.robot_name} is too low (height: {current_height} dm). Height must be at least 8 dm to flip."
 
         if battery_level is None:
             return "Battery level is unknown. Cannot perform flip."
         if battery_level < 20.0:
             return f"Battery too low ({battery_level:.2f}%). Flip maneuver is disabled. (Requires >20%)"
 
-        pub = flip_pubs.get(ROBOT_NAME)
-        if not pub:
-            return f"No flip publisher found for {ROBOT_NAME}"
         if current_em_sky == 1 and (current_fly_mode == 6 or current_fly_mode == 31):
             pass
         elif current_em_sky == 1:
             print(
-                f"INFO: {ROBOT_NAME} is in air but fly_mode is {current_fly_mode}. Waiting up to 10s for fly_mode 6 or 31..."
+                f"INFO: {self.robot_name} is in air but fly_mode is {current_fly_mode}. Waiting up to 10s for fly_mode 6 or 31..."
             )
             start_time = time.time()
             while time.time() - start_time < 10:
-                state_data_updated = drone_states.get(ROBOT_NAME)
+                state_data_updated = self.current_state_data
                 if state_data_updated:
                     current_fly_mode = state_data_updated.get("fly_mode")
                     current_em_sky_updated = state_data_updated.get("em_sky")
@@ -466,20 +453,20 @@ class TelloController(Node):
                     )
 
                     if current_physical_state_updated != "air":
-                        return f"{ROBOT_NAME} is no longer in the air (state: {current_physical_state_updated}). Aborting flip."
+                        return f"{self.robot_name} is no longer in the air (state: {current_physical_state_updated}). Aborting flip."
                     if current_height_updated is None or current_height_updated < 8:
-                        return f"{ROBOT_NAME} became too low (height: {current_height_updated} dm). Aborting flip."
+                        return f"{self.robot_name} became too low (height: {current_height_updated} dm). Aborting flip."
 
                     if current_fly_mode == 6 or current_fly_mode == 31:
                         print(
-                            f"INFO: {ROBOT_NAME} fly_mode changed to {current_fly_mode}. Proceeding with flip."
+                            f"INFO: {self.robot_name} fly_mode changed to {current_fly_mode}. Proceeding with flip."
                         )
                         break
 
                 time.sleep(0.5)
             else:
                 return (
-                    f"{ROBOT_NAME} did not enter fly_mode 6 or 31 within 10 seconds "
+                    f"{self.robot_name} did not enter fly_mode 6 or 31 within 10 seconds "
                     f"(current mode: {current_fly_mode}, height: {current_height}, em_sky: {current_em_sky}). Flip command cancelled."
                 )
         else:
@@ -504,28 +491,28 @@ class TelloController(Node):
             elif direction_lower == "backward":
                 msg_flip.flip_backward = True
 
-            pub.publish(msg_flip)
+            self.flip_pub.publish(msg_flip)
 
             # time stamp
             time_str = datetime.now().strftime("%H:%M:%S:%f")
             print(Fore.CYAN + f"[{time_str}] End flip time..")
 
-            return f"{ROBOT_NAME} performed a flip to the {direction}."
+            return f"{self.robot_name} performed a flip to the {direction}."
         except Exception as e:
-            return f"Failed to flip {ROBOT_NAME}: {e}"
+            return f"Failed to flip {self.robot_name}: {e}"
 
     def get_battery_level(self) -> str:
         """Gets the current battery level of the robot."""
-        level = battery_levels.get(ROBOT_NAME)
+        level = self.battery_state
         if level is not None:
-            return f"The battery level for {ROBOT_NAME} is currently {level:.2f}%."
+            return f"The battery level for {self.robot_name} is currently {level:.2f}%."
         else:
-            return f"Battery level for {ROBOT_NAME} has not been reported yet or is unavailable."
+            return f"Battery level for {self.robot_name} has not been reported yet or is unavailable."
 
     def status_drone(self) -> str:
         """Gets the current drone physical state (air/ground), battery level, height, fly_mode, and the wifi strength."""
-        state_data = drone_states.get(ROBOT_NAME)
-        level = battery_levels.get(ROBOT_NAME)
+        state_data = self.current_state_data
+        level = self.battery_state
         state_str = "unknown"
         height_str = "unknown"
         fly_mode_str = "unknown"
@@ -549,7 +536,7 @@ class TelloController(Node):
             else " Not currently tracking."
         )
         return (
-            f"Drone {ROBOT_NAME} status: Physical State='{state_str}', Height='{height_str}', "
+            f"Drone {self.robot_name} status: Physical State='{state_str}', Height='{height_str}', "
             f"FlyMode='{fly_mode_str}', Battery='{battery_str}', WiFi Strength='{wifi_strength_str}'.{tracking_info_str}"
         )
 
@@ -571,40 +558,36 @@ class TelloController(Node):
         time_str = datetime.now().strftime("%H:%M:%S:%f")
         print(Fore.CYAN + f"[{time_str}] Start switch mode time..")
 
-        self.key_pressed_pub
-        if not pub:
-            return f"No mode_switch publisher found for {ROBOT_NAME}."
-
         mode_requested = mode.strip().lower()
         msg_str = String()
 
         try:
             if mode_requested == "keyboard":
                 msg_str.data = "m"
-                pub.publish(msg_str)
+                self.key_pressed_pub.publish(msg_str)
                 response = "Switched to keyboard mode. Use keys w,a,s,d to move, t to takeoff, l to land."
 
             elif mode_requested == "hand":
                 msg_str.data = "h"
-                pub.publish(msg_str)
+                self.key_pressed_pub.publish(msg_str)
                 response = "Switched to hand gesture control mode."
 
             elif mode_requested == "tracking":
                 if not object_name:
                     return "Error: To switch to tracking mode, you must specify an object_name."
                 msg_str.data = "t"
-                pub.publish(msg_str)
+                self.key_pressed_pub.publish(msg_str)
                 # Immediately return the result from the helper function
-                response = start_object_tracking(object_name)
+                response = self.start_object_tracking(object_name)
 
             elif mode_requested == "stop tracking":
                 msg_str.data = "s"
-                pub.publish(msg_str)
+                self.key_pressed_pub.publish(msg_str)
                 # Immediately return the result from the helper function
-                response = stop_object_tracking()
+                response = self.stop_object_tracking()
 
             else:
-                response = f"Unsupported mode: '{mode}'. Valid modes are: keyboard, hand, tracking, stop tracking."
+                response = f"Unsupported mode:   self.key_pressed_pub '{mode}'. Valid modes are: keyboard, hand, tracking, stop tracking."
 
             # time stamp
             time_str_end = datetime.now().strftime("%H:%M:%S:%f")
@@ -613,7 +596,7 @@ class TelloController(Node):
 
         except Exception as e:
             return (
-                f"Failed to switch mode for {ROBOT_NAME} to '{mode_requested}' "
+                f"Failed to switch mode for {self.robot_name} to '{mode_requested}' "
                 f"(as '{msg_str.data}'): {e}"
             )
 
@@ -677,17 +660,13 @@ class TelloController(Node):
         print(Fore.CYAN + f"[{time_str}] Start stop_tracking tool time..")
 
         # Get the publisher for the tracking topic.
-        self.tracking_signal_pub
-        if not pub:
-            return f"Error: No tracking_info publisher found for {ROBOT_NAME}."
-
         try:
             stop_tracking_message = json.dumps(
                 {"action": "stop_tracking", "params": {}}
             )
-            pub.publish(String(data=stop_tracking_message))
+            self.tracking_signal_pub.publish(String(data=stop_tracking_message))
         except Exception as e:
-            return f"Failed to publish stop tracking command for {ROBOT_NAME}: {e}"
+            return f"Failed to publish stop tracking command for {self.robot_name}: {e}"
         previous_object = self.current_tracking_object
         self.current_tracking_object = None
 
@@ -695,65 +674,63 @@ class TelloController(Node):
         print(Fore.CYAN + f"[{time_str}] End stop_tracking tool time..")
 
         if previous_object:
-            return f"{ROBOT_NAME} has stopped tracking '{previous_object}'. Stop command was successfully published."
+            return f"{self.robot_name} has stopped tracking '{previous_object}'. Stop command was successfully published."
         else:
-            return f"A stop command was sent to {ROBOT_NAME} to ensure tracking is disabled."
+            return f"A stop command was sent to {self.robot_name} to ensure tracking is disabled."
 
     def palm_land(self) -> str:
         """Command the robot to land on an open palm. The drone must be in the air and will descend to land on a detected hand when one is presented below it."""
-        pub = palm_land_pubs.get(ROBOT_NAME)
-        state_data = drone_states.get(ROBOT_NAME)
-        if not pub:
-            return f"No palm_land publisher found for {ROBOT_NAME}"
+        state_data = self.current_state_data
+
         current_physical_state = "unknown"
         if state_data:
             current_physical_state = state_data.get("physical_state", "unknown")
 
         if current_physical_state != "air":
             if current_physical_state == "ground":
-                return f"{ROBOT_NAME} is already on the ground. Cannot palm land."
+                return f"{self.robot_name} is already on the ground. Cannot palm land."
             elif state_data is None:
-                return (
-                    f"Drone state for {ROBOT_NAME} is not yet known. Cannot palm land."
-                )
-            return f"{ROBOT_NAME} is not in the air. Current state: '{current_physical_state}'. Cannot palm land."  # MODIFIED: Message improved
+                return f"Drone state for {self.robot_name} is not yet known. Cannot palm land."
+            return f"{self.robot_name} is not in the air. Current state: '{current_physical_state}'. Cannot palm land."  # MODIFIED: Message improved
         try:
-            pub.publish(Empty())
-            return f"{ROBOT_NAME} is initiating palm landing. Please position your open palm beneath the drone."
+            self.palm_land_pub.publish(Empty())
+            return f"{self.robot_name} is initiating palm landing. Please position your open palm beneath the drone."
         except Exception as e:
-            return f"Failed to initiate palm land for {ROBOT_NAME}: {e}"
+            return f"Failed to initiate palm land for {self.robot_name}: {e}"
 
     def throw_and_go(self) -> str:
         """Command the robot to perform a throw takeoff. The drone must be on the hands of the user
             and then physically thrown within a 5-secon
         export function VideoContd arming window to initiate flight."""  # MODIFIED: Docstring updated to reflect arming window.
+        state_data = self.current_state_data
 
-        pub = throw_takeoff_pubs.get(ROBOT_NAME)
-        state_data = drone_states.get(ROBOT_NAME)
-        if not pub:
-            return f"No throw_takeoff publisher found for {ROBOT_NAME}"
         current_physical_state = "unknown"
         if state_data:
             current_physical_state = state_data.get("physical_state", "unknown")
 
         if current_physical_state != "ground":
             if state_data is None:
-                return f"Drone state for {ROBOT_NAME} is not yet known. Cannot perform throw and go."
-            return f"{ROBOT_NAME} is not on the ground. Current state: '{current_physical_state}'. Cannot perform throw and go."
+                return f"Drone state for {self.robot_name} is not yet known. Cannot perform throw and go."
+            return f"{self.robot_name} is not on the ground. Current state: '{current_physical_state}'. Cannot perform throw and go."
         try:
             arming_duration_seconds = 5
             publish_frequency_hz = 10
             sleep_interval = 1.0 / publish_frequency_hz
             start_time = time.time()
             while (time.time() - start_time) < arming_duration_seconds:
-                pub.publish(Empty())
+                self.throw_takeoff_pub.publish(Empty())
                 time.sleep(sleep_interval)
-            return f"{ROBOT_NAME} arming window for throw and go ({arming_duration_seconds}s) has ended. If thrown, drone should react."
+            return f"{self.robot_name} arming window for throw and go ({arming_duration_seconds}s) has ended. If thrown, drone should react."
         except Exception as e:
-            return f"Failed during throw and go sequence for {ROBOT_NAME}: {e}"
+            return f"Failed during throw and go sequence for {self.robot_name}: {e}"
 
     def get_prompts(self) -> str:
-        return """You are an expert drone assistant. You can control a Tello drone using the following tools: """
+        prompts = RobotSystemPrompts(
+            embodiment_and_persona="You are a ROS-enabled assistant. When the user asks for a command like 'take off', "
+            "use the corresponding tool like `takeoff()`. Do not explain; just act using the tools provided."
+            "If the user asks about the tools, tell him all the available tools and their descriptions. ",
+        )
+        return prompts
 
     def get_tools(self) -> List:
 
