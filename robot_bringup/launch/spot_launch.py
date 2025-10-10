@@ -28,24 +28,6 @@ def create_spot_driver_launch(ld: LaunchDescription, pkg_dir: str) -> None:
     )
 
 
-# def create_object_recognition_launch(ld: LaunchDescription) -> None:
-#     ld.add_action(
-#         Node(
-#             package="spot_object_recognition",
-#             executable="spot_object_recognition_node",
-#             output="screen",
-#         )
-#     )
-
-
-# def create_object_review_llm_launch(ld: LaunchDescription) -> None:
-#     ld.add_action(
-#         Node(
-#             package="object_review_llm", executable="object_review_llm", output="screen"
-#         )
-#     )
-
-
 def create_robot_bt_launch(ld: LaunchDescription) -> None:
     robot_bt_pkg_dir = get_package_share_directory("robot_bt")
     pkg_dir = get_package_share_directory("robot_bringup")
@@ -174,8 +156,5 @@ def generate_launch_description():
     create_hand_tracker_plugin_launch(ld)
     create_robot_agent_plugin_launch(ld)
     create_person_tracking_plugin_launch(ld)
-
-    # create_object_recognition_launch(ld)
-    # create_object_review_llm_launch(ld)
 
     return ld

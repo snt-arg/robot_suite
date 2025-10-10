@@ -16,6 +16,14 @@ suitenv/
 toignore/
 .github/
 
+# temporarily
+robot_plugins/
+robot_bringup/
+robot_bt/
+
+.gitignore
+interaction_log.txt
+
 
 # Keys
 aerolabkey

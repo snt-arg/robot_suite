@@ -178,16 +178,16 @@ class FollowingCommands(PluginNode):
             self.lower_threshold_midpoint = 0.3
             self.higher_threshold_midpoint = 0.7
 
-            self.lower_threshold_box_size = 1
-            self.higher_threshold_box_size = 1.1
+            self.lower_threshold_box_size = 0.85
+            self.higher_threshold_box_size = 1
 
         elif self.control_method.lower() == "p":
             # Controller for y axis (horizontal position to keep the person within the field of view)
 
-            self.pid_y_axis = P(0.5, 1, (-0.5, 0.5))
+            self.pid_y_axis = P(0.5, 1.5, (-0.15, 0.15))
 
             # Controller for bounding box size (distance between the drone and the person)
-            self.pid_x_axis = P(0.8, 0.1, (-0.25, 0.25))
+            self.pid_x_axis = P(0.8, 1, (-0.25, 0.25))
 
         elif self.control_method.lower() == "mpc":
             self.mpc_x_axis = MPC(10, 0.5, 0.5)

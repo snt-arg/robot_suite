@@ -90,6 +90,7 @@ class Tracker(PluginNode):
         # variable to count since how much iteration we didn't update the position of the person tracked.
         # If the position didn't change we can conclude that the person went out of the field of view of the camera, and we can rotate.
         self.no_update_count = 0
+        self.last_update_time = self.get_clock().now().nanoseconds
 
         # mode = llm or hand
         self.mode = "hand"  # "llm"
@@ -434,6 +435,7 @@ class Tracker(PluginNode):
                     if (
                         self.pilot_box.box_id != -1
                         and box.box_id == self.pilot_box.box_id
+                        and box.box_class == self.pilot_box.box_class
                     ):
                         self.pilot_box = box
                         self.no_update_count = 0

@@ -129,7 +129,7 @@ def create_robot_agent_plugin_launch(ld: LaunchDescription) -> None:
     ld.add_action(
         Node(
             package="robot_agent",
-            executable="tello_controller_node",
+            executable="robot_agent_node",
             parameters=[params_file],
             prefix="gnome-terminal --",
         )
@@ -176,8 +176,8 @@ def generate_launch_description():
     create_tello_driver_launch(ld)
     create_robot_bt_launch(ld)
     create_rosbridge_server_launch(ld)
-    create_video_interface_launch(ld)
-    # create_tello_control_station_launch(ld)
+    # create_video_interface_launch(ld)
+    create_tello_control_station_launch(ld)
 
     # ------------------
     # -    Plugins     -

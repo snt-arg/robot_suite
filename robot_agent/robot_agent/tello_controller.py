@@ -282,7 +282,7 @@ class TelloController(Node):
         }
 
     def takeoff(self) -> str:
-        """Command the robot to take off and transition from ground to air. It cannot be used if the robot is already in the air."""
+        """Command the robot to take off (transition from ground to air)."""
 
         # time stamp
         time_str = datetime.now().strftime("%H:%M:%S:%f")
@@ -308,26 +308,7 @@ class TelloController(Node):
             return f"Failed to take off {self.robot_name}: {e}"
 
     def move(self, linear: List[float], angular: float, duration: int) -> str:
-        """
-        Move the robot with specified linear and angular velocities for a given duration.
-        This function controls movement along three axes (x, y, z) and rotation.
-
-        The coordinate system is as follows:
-        - x-axis: +x is forward, -x is backward.
-        - y-axis: +y is left, -y is right.
-        - z-axis: +z is up, -z is down.
-        - angular z-axis: +z is counter-clockwise turn (left), -z is clockwise turn (right).
-
-        To perform this movement, the drone must be in the air.
-        The user may specify a speed (e.g., "velocity 1m/s", "go slowly"). If a speed is provided, use it to set the magnitude of the linear velocity vector. If no speed is specified, use a default of 1 m/s or -1 m/s.
-        If the user does not specify a time, assume a default duration of 1 second.
-        If the drone's height is below 8 units (8dm), it cannot move down.
-
-        :param linear: A list of 3 floats representing [x, y, z] velocity in m/s. This vector should be constructed based on the user's direction and specified speed.
-                    For example, if the user says "go right at 1.2 m/s", the vector should be [0.0, -1.2, 0.0].
-        :param angular: A float for z-axis angular velocity (rotation).
-        :param duration: Duration of the movement in seconds.
-        """
+        """Command the robot to move with specified linear and angular velocities for a certain duration."""
 
         # time stamp
         time_str = datetime.now().strftime("%H:%M:%S:%f")
@@ -373,7 +354,7 @@ class TelloController(Node):
             return f"Failed to move {self.robot_name}: {e}"
 
     def land(self) -> str:
-        """Command the robot to land and transition from air to ground. It cannot be used if the robot is already on the ground."""
+        """Command the drone to land (transition from air to ground)."""
 
         # time stamp
         time_str = datetime.now().strftime("%H:%M:%S:%f")
@@ -402,11 +383,7 @@ class TelloController(Node):
             return f"Failed to land {self.robot_name}: {e}"
 
     def flip(self, direction: str) -> str:
-        """Command the drone to perform a flip in the specified direction. If the direction is not provided, by default, forward. Valid directions: 'forward', 'backward', 'left', 'right'.
-        To perform this movement the drone must be in the air (em_sky=1), at a height of at least 8 units (e.g. 8dm), and in fly_mode 6 or 31.
-        The battery level must be above 20% to perform the flip maneuver.
-        If in air but not in fly_mode 6 or 31, it will wait up to 10 seconds for the mode to change.
-        """
+        """Command the robot to perform a flip in the specified direction."""
 
         # time stamp
         time_str = datetime.now().strftime("%H:%M:%S:%f")
@@ -510,7 +487,7 @@ class TelloController(Node):
             return f"Battery level for {self.robot_name} has not been reported yet or is unavailable."
 
     def status_drone(self) -> str:
-        """Gets the current drone physical state (air/ground), battery level, height, fly_mode, and the wifi strength."""
+        """Get the current status of the drone, including physical state, height, fly mode, battery level, and WiFi strength."""
         state_data = self.current_state_data
         level = self.battery_state
         state_str = "unknown"
@@ -541,19 +518,7 @@ class TelloController(Node):
         )
 
     def switch_mode(self, mode: str, object_name: Optional[str] = None) -> str:
-        """
-        Switches the control mode of the drone. Tell the user that he has to select the image window.
-        The LLM should request modes like 'keyboard', 'hand', 'tracking' or 'stop tracking'.
-        If the user selects 'keyboard', he has to know that to takeoff he has to use "t", to land "l", to move the letters "a", "w", "d", "s".
-        If the user selects 'hand', he has to know that he has to use the hands to control the drone, all the options are in the image window.
-        If the user selects 'tracking', tracking': Start tracking a person holding a specific object.
-        When using this mode, you must also provide the 'object_name' parameter.
-        Choose the object from this list: [backpack, umbrella, handbag, bottle, cup, fork, knife, spoon, bowl, banana, apple, cell phone, book].
-        If the user selects 'stop tracking': Stop the current tracking task.
-
-        :param mode: The desired control mode as a string (e.g., "keyboard", "hand", "tracking", "stop tracking").
-        :param object_name: The name of the object to track. Required only for 'tracking' mode.
-        """
+        """Switch the robot's control mode."""
         # time stamp
         time_str = datetime.now().strftime("%H:%M:%S:%f")
         print(Fore.CYAN + f"[{time_str}] Start switch mode time..")
@@ -603,14 +568,7 @@ class TelloController(Node):
     def start_object_tracking(self, object_name: str) -> str:
         """
         Use this tool to start tracking a person holding a specific object. It will wait
-        up to 5 seconds for a person holding this object to be detected. The drone MUST be in the air.
-
-        First, you MUST choose the most similar object from this list of available options:
-        [backpack, umbrella, handbag, bottle, cup, fork, knife, spoon, bowl, banana, apple, cell phone, book]
-        Match the user's request to an object in the list. For example, if the user asks for a "phone", choose "cell phone".
-        If you cannot find a clear match, respond by saying "There are no similar objects to track."
-        :param object_name: str - The chosen object name from the list.
-        """
+        up to 5 seconds for a person holding this object to be detected."""
 
         # time stamp
         time_str = datetime.now().strftime("%H:%M:%S:%f")
@@ -651,10 +609,7 @@ class TelloController(Node):
             return response
 
     def stop_object_tracking(self) -> str:
-        """
-        Stops tracking the current object and clears the tracking target.
-        An explicit "stop_tracking" message is sent to the tracking system.
-        """
+        """Command the robot to stop any ongoing object/person tracking."""
 
         time_str = datetime.now().strftime("%H:%M:%S:%f")
         print(Fore.CYAN + f"[{time_str}] Start stop_tracking tool time..")
@@ -679,7 +634,7 @@ class TelloController(Node):
             return f"A stop command was sent to {self.robot_name} to ensure tracking is disabled."
 
     def palm_land(self) -> str:
-        """Command the robot to land on an open palm. The drone must be in the air and will descend to land on a detected hand when one is presented below it."""
+        """Command the robot to perform a palm landing maneuver."""
         state_data = self.current_state_data
 
         current_physical_state = "unknown"
@@ -699,9 +654,7 @@ class TelloController(Node):
             return f"Failed to initiate palm land for {self.robot_name}: {e}"
 
     def throw_and_go(self) -> str:
-        """Command the robot to perform a throw takeoff. The drone must be on the hands of the user
-            and then physically thrown within a 5-secon
-        export function VideoContd arming window to initiate flight."""  # MODIFIED: Docstring updated to reflect arming window.
+        """Command the robot to arm for throw and go."""
         state_data = self.current_state_data
 
         current_physical_state = "unknown"
@@ -726,56 +679,129 @@ class TelloController(Node):
 
     def get_prompts(self) -> str:
         prompts = RobotSystemPrompts(
-            embodiment_and_persona="You are a ROS-enabled assistant. When the user asks for a command like 'take off', "
-            "use the corresponding tool like `takeoff()`. Do not explain; just act using the tools provided."
-            "If the user asks about the tools, tell him all the available tools and their descriptions. ",
+            embodiment_and_persona="You are a ROS-enabled assistant for a Dji tello drone."
+            "When the user asks for a command, First read the documentation of each tool to understand how to use it. Then use the appropriate tools."
+            "For example, if the user says something like like 'take off, you should first read the documentation of the `takeoff()` tool."
+            "and you will see in the documentation that the drone can't takeoff if the battery is less than a certain percentage. "
+            "So in that case, you need to first check the status of the drone, before taking off. "
+            "Moreover, always use the tools available, unless the user asks for something that is not possible with the tools. "
+            "If the user asks for something that is not possible with the tools, but, you can answer based on available knowledge either from the tools or information that you got before, then answer."
+            "For example, if the user asks about the tools, tell him all the available tools and their descriptions. "
+            "But if the user asks for something that is not possible with the tools, and for which you don't have enough information, or are unsure, "
+            "either ask the user to clarify his/her request, or tell him/her that you don't know.",
+            about_your_capabilities="You capabilities are limited to the available tools. Anything that is asked to you and not provided by a tool is beyond your capabilities",
+            critical_instructions="Always use the corresponding tool if you can. If the user ask you to perform an action requiring to move the robot, always use the move tool."
+            "Same for all other tools: if the user ask for an information/action requiring to use a tool, always use the relevant tool. "
+            "Also, tell the user what you are trying to do."
+            "If an error occured, tell the user about it.",
         )
         return prompts
 
     def get_tools(self) -> List:
 
         @tool
-        def move():
-            return self.move()
+        def move(linear, angular, duration):
+            """
+            Move the robot with specified linear and angular velocities for a given duration.
+            This function controls movement along three axes (x, y, z) and rotation.
+
+            The coordinate system is as follows:
+            - x-axis: +x is forward, -x is backward.
+            - y-axis: +y is left, -y is right.
+            - z-axis: +z is up, -z is down.
+            - angular z-axis: +z is counter-clockwise turn (left), -z is clockwise turn (right).
+
+            To perform this movement, the drone must be in the air.
+            The user may specify a speed (e.g., "velocity 1m/s", "go slowly"). If a speed is provided, use it to set the magnitude of the linear velocity vector. If no speed is specified, use a default of 1 m/s or -1 m/s.
+            If the user does not specify a time, assume a default duration of 1 second.
+            If the drone's height is below 8 units (8dm), it cannot move down.
+
+            :param linear: A list of 3 floats representing [x, y, z] velocity in m/s. This vector should be constructed based on the user's direction and specified speed.
+                           For example, if the user says "go right at 1.2 m/s", the vector should be [0.0, -1.2, 0.0].
+            :param angular: A float for z-axis angular velocity (rotation).
+            :param duration: Duration of the movement in seconds.
+            """
+            return self.move(linear, angular, duration)
 
         @tool
         def takeoff():
+            """Command the robot to take off and transition from ground to air. It cannot be used if the robot is already in the air or if the drone's battery is below 20%."""
             return self.takeoff()
 
         @tool
         def land():
+            """Command the robot to land and transition from air to ground. It cannot be used if the robot is already on the ground."""
             return self.land()
 
         @tool
-        def flip():
-            return self.flip()
+        def flip(direction):
+            """Command the drone to perform a flip in the specified direction. If the direction is not provided, by default, forward. Valid directions: 'forward', 'backward', 'left', 'right'.
+            To perform this movement the drone must be in the air (em_sky=1), at a height of at least 8 units (e.g. 8dm), and in fly_mode 6 or 31.
+            The battery level must be above 20% to perform the flip maneuver.
+            If in air but not in fly_mode 6 or 31, it will wait up to 10 seconds for the mode to change.
+            :param direction : A String indicating the flip direction. Valid directions: 'forward', 'backward', 'left', 'right'. Default should be 'forward', in case the user does not provide a direction.
+            """
+            return self.flip(direction)
 
         @tool
         def get_battery_level():
+            """Gets the current battery level of the robot."""
             return self.get_battery_level()
 
         @tool
         def status_drone():
+            """Gets the current drone physical state (air/ground), battery level, height, fly_mode, and the wifi strength."""
             return self.status_drone()
 
         @tool
-        def switch_mode():
-            return self.switch_mode()
+        def switch_mode(mode, object_name):
+            """
+            Switches the control mode of the drone. Tell the user that he has to select the image window.
+            The LLM should request modes like 'keyboard', 'hand', 'tracking' or 'stop tracking'.
+            If the user selects 'keyboard', he has to know that to takeoff he has to use "t", to land "l", to move the letters "a", "w", "d", "s".
+            If the user selects 'hand', he has to know that he has to use the hands to control the drone, all the options are in the image window.
+            If the user selects 'tracking', tracking': Start tracking a person holding a specific object.
+            When using this mode, you must also provide the 'object_name' parameter.
+            Choose the object from this list: [backpack, umbrella, handbag, bottle, cup, fork, knife, spoon, bowl, banana, apple, cell phone, book].
+            If the user selects 'stop tracking': Stop the current tracking task.
+
+            :param mode: The desired control mode as a string (e.g., "keyboard", "hand", "tracking", "stop tracking").
+            :param object_name: The name of the object to track. Required only for 'tracking' mode.
+            """
+            return self.switch_mode(mode, object_name)
 
         @tool
-        def start_object_tracking():
-            return self.start_object_tracking()
+        def start_object_tracking(object_name):
+            """
+            Use this tool to start tracking a person holding a specific object. It will wait
+            up to 5 seconds for a person holding this object to be detected. The drone MUST be in the air.
+
+            First, you MUST choose the most similar object from this list of available options:
+            [backpack, umbrella, handbag, bottle, cup, fork, knife, spoon, bowl, banana, apple, cell phone, book]
+            Match the user's request to an object in the list. For example, if the user asks for a "phone", choose "cell phone".
+            If you cannot find a clear match, respond by saying "There are no similar objects to track."
+            :param object_name: str - The chosen object name from the list.
+            """
+            return self.start_object_tracking(object_name)
 
         @tool
         def stop_object_tracking():
+            """
+            Stops tracking the current object and clears the tracking target.
+            An explicit "stop_tracking" message is sent to the tracking system.
+            """
             return self.stop_object_tracking()
 
         @tool
         def throw_and_go():
+            """Command the robot to perform a throw takeoff. The drone must be on the hands of the user
+                and then physically thrown within a 5-secon
+            export function VideoContd arming window to initiate flight."""
             return self.throw_and_go()
 
         @tool
         def palm_land():
+            """Command the robot to land on an open palm. The drone must be in the air and will descend to land on a detected hand when one is presented below it."""
             return self.palm_land()
 
         return [
