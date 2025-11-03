@@ -7,25 +7,26 @@ services:
             dockerfile: ./docker/tello/Dockerfile
         environment:
             - DISPLAY=${DISPLAY}
-            - RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+            #- RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
         volumes:
             - /tmp/.X11-unix:/tmp/.X11-unix
         network_mode: "host"
         tty: true
         stdin_open: true
-        command: "ros2 launch robot_bringup system_launch.py"
+        command: "ros2 launch robot_bringup tello_launch.py"
     spot_suite:
-        image: robot_suite:spot
-        container_name: spot_suite
+        image: ros:jazzy
+        container_name: spot_suite_jazzy
         build:
             context: .
             dockerfile: ./docker/spot/Dockerfile
         environment:
             - DISPLAY=${DISPLAY}
-            - RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+            #- RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
         volumes:
             - /tmp/.X11-unix:/tmp/.X11-unix
+            #- /home/aerolabws2/workspaces/robot_suite_ingrid/spot_sdk_install:/spot_sdk_install:ro
         network_mode: "host"
         tty: true
         stdin_open: true
-        command: "ros2 launch robot_bringup system_launch.py"
+        command: "ros2 launch robot_bringup spot_launch.py"
