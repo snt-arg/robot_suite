@@ -50,7 +50,8 @@ class FollowingCommands(PluginNode):
     publisher_commands = None
 
     # control method for autonomous tracking. There are three methods available : "on/off", "P" and "MPC"
-    control_method = "P"  # "on/off", "P" or "MPC" . Note: P is for P controller
+    # Default method : MPC
+    control_method = "MPC"  # "on/off", "P" or "MPC" . Note: P is for P controller
 
     # on-off parameters
     lower_threshold_midpoint_to_rotate = None
@@ -69,6 +70,7 @@ class FollowingCommands(PluginNode):
     # MDP parameters
     mpc_y_axis = None
     mpc_x_axis = None
+    mpc_z_axis = None
 
     # rotation values
     angular_speed = pi / 10
@@ -104,6 +106,11 @@ class FollowingCommands(PluginNode):
         self.avoid_collision = False  # boolean variable to decide whether we should avoid collision or just send the commands messages.
 
         self.boxes = None
+
+        self.setpoint_box_size = 0.85  # desired bounding box size to maintain the distance between the drone and the person
+        self.setpoint_target_position = 0.5  # desired position of the person in the field of view (normalized coordinates)
+
+        self.last_received_pilot_infos_time = None  # in nanoseconds
 
     def _init_parameters(self) -> None:
         """Method to initialize parameters such as ROS topics' names"""
@@ -169,8 +176,8 @@ class FollowingCommands(PluginNode):
 
     def _init_control(self) -> None:
         """Method to initialize the control parameters, depending on the control method"""
-        self.lower_threshold_midpoint_to_rotate = 0.1
-        self.higher_threshold_midpoint_to_rotate = 0.7
+        self.lower_threshold_midpoint_to_rotate = 0.25
+        self.higher_threshold_midpoint_to_rotate = 0.85
 
         if self.control_method.lower() == "on/off":
 
@@ -178,20 +185,24 @@ class FollowingCommands(PluginNode):
             self.lower_threshold_midpoint = 0.3
             self.higher_threshold_midpoint = 0.7
 
-            self.lower_threshold_box_size = 0.85
+            self.lower_threshold_box_size = 0.75
             self.higher_threshold_box_size = 1
 
         elif self.control_method.lower() == "p":
             # Controller for y axis (horizontal position to keep the person within the field of view)
 
-            self.pid_y_axis = P(0.5, 1.5, (-0.15, 0.15))
+            self.pid_y_axis = P(self.setpoint_target_position, 1.5, (-0.15, 0.15))
 
             # Controller for bounding box size (distance between the drone and the person)
-            self.pid_x_axis = P(0.8, 1, (-0.25, 0.25))
+            self.pid_x_axis = P(self.setpoint_box_size, 1, (-0.25, 0.25))
+
+            # Controller for z axis (vertical position to robot at the correct altitude)
+            self.pid_z_axis = P(self.setpoint_target_position, 1, (-0.15, 0.15))
 
         elif self.control_method.lower() == "mpc":
-            self.mpc_x_axis = MPC(10, 0.5, 0.5)
-            self.mpc_y_axis = MPC(10, 1.25, 1.25)
+            self.mpc_x_axis = MPC(10, 0, 0.5, 1.0)
+            self.mpc_y_axis = MPC(10, 0, 1.25, 1.0)
+            self.mpc_z_axis = MPC(10, 0, 0.5, 1.0)
 
         else:
             raise ValueError("Unknown control method")
@@ -204,6 +215,8 @@ class FollowingCommands(PluginNode):
         self.person_tracked_midpoint = calculate_midpoint_box(msg)
         self.bounding_box_size = calculate_box_size(msg)
         self.pilot_id = msg.box_id
+        self.last_received_pilot_infos_time = self.get_clock().now().nanoseconds
+
         self.get_logger().debug(
             f"Person tracked midpoint: {self.person_tracked_midpoint}"
         )
@@ -243,29 +256,37 @@ class FollowingCommands(PluginNode):
             else:
                 self.commands_msg = following_commands
 
-            self.publisher_commands.publish(self.commands_msg)
+            self.get_logger().debug(
+                f"Commands to publish to the drone: {self.commands_msg}"
+            )
+            # self.publisher_commands.publish(self.commands_msg)
 
             # rotation
             if self.person_tracked_midpoint.x < self.lower_threshold_midpoint_to_rotate:
                 self.get_logger().debug("rotate left")
-                rotationThread = Thread(
-                    target=self.rotation,
-                    args=(self.angular_speed, self.target_angle),
-                    daemon=True,
-                )
-                rotationThread.start()
+                self.commands_msg.angular.z = self.angular_speed
+
+                # rotationThread = Thread(
+                #     target=self.rotation,
+                #     args=(self.angular_speed, self.target_angle),
+                #     daemon=True,
+                # )
+                # rotationThread.join()
 
             elif (
                 self.person_tracked_midpoint.x
                 > self.higher_threshold_midpoint_to_rotate
             ):
                 self.get_logger().debug("rotate right")
-                rotationThread = Thread(
-                    target=self.rotation,
-                    args=(-self.angular_speed, -self.target_angle),
-                    daemon=True,
-                )
-                rotationThread.start()
+                self.commands_msg.angular.z = -self.angular_speed
+                # rotationThread = Thread(
+                #     target=self.rotation,
+                #     args=(-self.angular_speed, -self.target_angle),
+                #     daemon=True,
+                # )
+                # rotationThread.join()
+
+            self.publisher_commands.publish(self.commands_msg)
 
     def control_commands(self) -> Twist:
         """Function to determine the command to send to the drone given the current position of the person
@@ -280,9 +301,6 @@ class FollowingCommands(PluginNode):
                 >= self.lower_threshold_midpoint_to_rotate
                 and self.person_tracked_midpoint.x <= self.lower_threshold_midpoint
             ):
-                self.get_logger().debug(
-                    "move left"
-                )  # (a in keyboard mode control station)
                 commands.linear.y += 0.25
 
             elif (
@@ -290,18 +308,20 @@ class FollowingCommands(PluginNode):
                 <= self.higher_threshold_midpoint_to_rotate
                 and self.person_tracked_midpoint.x >= self.higher_threshold_midpoint
             ):
-                self.get_logger().debug(
-                    "move right"
-                )  # (d in keyboard mode control station )
                 commands.linear.y += -0.25
+
+            # altitude / vertical move
+            if self.person_tracked_midpoint.y < self.lower_threshold_midpoint:
+                commands.linear.z += 0.25
+
+            elif self.person_tracked_midpoint.y > self.higher_threshold_midpoint:
+                commands.linear.z += -0.25
 
             # distance
             if self.bounding_box_size < self.lower_threshold_box_size:
-                self.get_logger().debug("approach")
                 commands.linear.x += 0.35
 
             elif self.bounding_box_size > self.higher_threshold_box_size:
-                self.get_logger().debug("move back")
                 commands.linear.x += -0.35
 
         elif self.control_method.lower() == "p":
@@ -310,40 +330,53 @@ class FollowingCommands(PluginNode):
             correction_y = self.pid_y_axis.compute(self.person_tracked_midpoint.x)
             commands.linear.y = correction_y
 
+            # altitude / vertical move
+            correction_z = self.pid_z_axis.compute(self.person_tracked_midpoint.y)
+            commands.linear.z = correction_z
+
             # distance
             correction_x = self.pid_x_axis.compute(self.bounding_box_size)
             commands.linear.x = correction_x
 
         elif self.control_method.lower() == "mpc":
             # horizontal
-            correction_y = self.mpc_y_axis.solve_mpc(self.person_tracked_midpoint.x)
+            correction_y = self.mpc_y_axis.solve_mpc(
+                self.person_tracked_midpoint.x - self.setpoint_target_position
+            )
             commands.linear.y = correction_y
 
-            if correction_y > 0:
-                self.get_logger().debug(
-                    "move left"
-                )  # (a in keyboard mode control station)
-                commands.linear.y += 0.2
-
-            elif correction_y < 0:
-                self.get_logger().debug(
-                    "move right"
-                )  # (d in keyboard mode control station )
-                commands.linear.y += -0.2
+            # altitude / vertical
+            correction_z = self.mpc_z_axis.solve_mpc(
+                self.person_tracked_midpoint.y - self.setpoint_target_position
+            )
+            commands.linear.z = correction_z
 
             # distance
-            correction_x = self.mpc_x_axis.solve_mpc(self.bounding_box_size)
+            correction_x = self.mpc_x_axis.solve_mpc(
+                self.bounding_box_size - self.setpoint_box_size
+            )
             commands.linear.x = correction_x
-
-            if correction_x > 0:
-                self.get_logger().debug("approach")
-                commands.linear.x += 0.2
-            elif correction_x < 0:
-                self.get_logger().debug("move back")
-                commands.linear.x += -0.2
 
         else:
             raise ValueError("Unknown control method")
+
+        if commands.linear.y > 0:
+            self.get_logger().debug("move left")  # (a)
+
+        elif commands.linear.y < 0:
+            self.get_logger().debug("move right")  # (d )
+
+        if commands.linear.z > 0:
+            self.get_logger().debug("move up")  # (up arrow)
+
+        elif commands.linear.z < 0:
+            self.get_logger().debug("move down")  # (down arrow)
+
+        if commands.linear.x > 0:
+            self.get_logger().debug("approach")  # (w)
+
+        elif commands.linear.x < 0:
+            self.get_logger().debug("move back")  # (s)
 
         return commands
 
@@ -431,7 +464,8 @@ def main(args=None):
     rclpy.init(args=args)
     followingCommands = FollowingCommands("following_commands_node")
 
-    # followingCommands.get_logger().set_level(rclpy.logging.LoggingSeverity.DEBUG)
+    # uncomment to see debug logs
+    followingCommands.get_logger().set_level(rclpy.logging.LoggingSeverity.DEBUG)
 
     # execute the callback function until the global executor is shutdown
     rclpy.spin(followingCommands)

@@ -12,8 +12,10 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/AllBoundingBoxes.msg"
   "msg/Box.msg"
   "msg/PointMsg.msg"
+  "srv/TrackingMode.srv"
+  
 
-  #DEPENDENCIES std_msgs geometry_msgs #PersonTracked.msg depedns on geometry_msgs
+  #DEPENDENCIES std_msgs 
  
 )
 # find dependencies

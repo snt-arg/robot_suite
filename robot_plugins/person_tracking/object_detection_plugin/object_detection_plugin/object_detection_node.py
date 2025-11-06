@@ -58,7 +58,7 @@ class ObjectDetector(PluginNode):
     minimum_prob = 0.4
 
     # Variable to perform object detection on only some frames
-    process_interval = 1e7
+    process_interval = 1e5
 
     # topic names
     image_raw_topic = "/camera/image_raw"  # raw image frames from the drone's camera
@@ -266,12 +266,6 @@ class ObjectDetector(PluginNode):
             (self.get_clock().now().nanoseconds - self.last_received_time)
             > self.process_interval
         ):
-            print(
-                "hey: ",
-                (self.get_clock().now().nanoseconds - self.last_received_time),
-                " t: ",
-                self.process_interval,
-            )
 
             self.detection(self.image_raw)  # performing detection on the cv2 image
 

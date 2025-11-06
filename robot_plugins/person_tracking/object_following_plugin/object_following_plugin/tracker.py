@@ -7,6 +7,7 @@ from std_msgs.msg import String, Bool
 
 # person tracked messages and bounding boxes messages
 from person_tracking_msgs.msg import AllBoundingBoxes, Box
+from person_tracking_msgs.srv import TrackingMode
 
 
 from plugin_base.plugin_base import PluginNode, NodeState
@@ -38,12 +39,18 @@ class Tracker(PluginNode):
     # topic names
     pilot_topic = "/person_tracked"
     bounding_boxes_topic = "/all_bounding_boxes"
-    llm_tracking_signal_topic = "/tracking_info_pilot_person"
+    llm_tracking_signal_topic = "/tracking_signal_llm"
     hand_tracking_signal_topic = "/tracking_signal_gesture"
     tracking_status_topic = "/tracking_status"
 
-    # amount of (0,0) midpoints to receive before concluding that the person is lost.
-    max_no_update_before_lost = 100
+    # tracking mode is either llm or hand
+    tracking_mode = "llm"  # or  "hand"
+
+    # service on which to send requests to change the tracking mode
+    tracking_mode_srv = "/tracking_mode_srv"
+
+    # number of iteration the pilot's position is unchanged before concluding that the person is lost.
+    max_no_update_before_lost = 30
 
     max_length_midpoint_queue = 2
 
@@ -52,9 +59,12 @@ class Tracker(PluginNode):
     sub_llm_tracking_signal = None
     sub_hand_tracking_signal = None
 
-    # publisher
+    # publishers
     publisher_pilot = None
     publisher_tracking_status = None
+
+    # service
+    service_tracking_mode = None
 
     overlapping_method = "intersection"
 
@@ -78,6 +88,9 @@ class Tracker(PluginNode):
         # initializing publishers
         self._init_publishers()
 
+        # initializing services
+        self._init_services()
+
         # variable to receive bounding boxes containing all persons detected
         self.boxes = None
 
@@ -89,11 +102,9 @@ class Tracker(PluginNode):
 
         # variable to count since how much iteration we didn't update the position of the person tracked.
         # If the position didn't change we can conclude that the person went out of the field of view of the camera, and we can rotate.
-        self.no_update_count = 0
-        self.last_update_time = self.get_clock().now().nanoseconds
+        self.no_update_count = None  # in nanoseconds
 
-        # mode = llm or hand
-        self.mode = "hand"  # "llm"
+        self.last_received_bounding_boxes_time = None  # in nanoseconds
 
         # Queue to keep the last nonempty midpoints. Help to calculate the trajectory of the person before he got lost
         self.midpoint_queue = deque(maxlen=self.max_length_midpoint_queue)
@@ -119,6 +130,10 @@ class Tracker(PluginNode):
             "max_no_update_before_lost", self.max_no_update_before_lost
         )
         self.declare_parameter("overlapping_method", self.overlapping_method)
+
+        self.declare_parameter("tracking_mode", self.tracking_mode)
+
+        self.declare_parameter("tracking_mode_srv", self.tracking_mode_srv)
 
         self.pilot_topic = (
             self.get_parameter("pilot_topic").get_parameter_value().string_value
@@ -155,6 +170,13 @@ class Tracker(PluginNode):
         self.overlapping_method = (
             self.get_parameter("overlapping_method").get_parameter_value().string_value
         )
+        self.tracking_mode = (
+            self.get_parameter("tracking_mode").get_parameter_value().string_value
+        )
+
+        self.tracking_mode_srv = (
+            self.get_parameter("tracking_mode_srv").get_parameter_value().string_value
+        )
 
     def _init_publishers(self) -> None:
         """Method to initialize publishers"""
@@ -184,21 +206,28 @@ class Tracker(PluginNode):
             5,
         )
 
+    def _init_services(self) -> None:
+        """Method to initialize services"""
+        self.service_tracking_mode = self.create_service(
+            TrackingMode, self.tracking_mode_srv, self.tracking_mode_service_callback
+        )
+
     ########################### First Subscriber ##################################################################################################
     def bounding_boxes_listener_callback(self, boxes_msg):
         """Callback function for the subscriber node (to topic /all_bounding_boxes).
         For each bounding box received, save it in a variable for processing"""
 
         self.get_logger().debug("\nBounding boxes message received")
-        if self.person_lost():
-            if equal_allBoundingBoxes_msg(
-                self.boxes, boxes_msg
-            ):  # if the boxes are not updated
-                self.get_logger().debug(f"\nBoxes not updated!\n")
+        if self.boxes != None and equal_allBoundingBoxes_msg(
+            self.boxes, boxes_msg
+        ):  # if the boxes are not updated
+            self.get_logger().debug(f"\nBoxes not updated!\n")
+        else:
+            self.get_logger().debug(f"\n#Boxes updated!#\n")
+            self.boxes = boxes_msg
+            self.last_received_bounding_boxes_time = self.get_clock().now().nanoseconds
 
-            else:
-                self.get_logger().debug(f"\n#Boxes updated!#\n")
-                self.boxes = boxes_msg
+            if self.person_lost():
                 if self.boxes.bounding_boxes != []:
                     self.pilot_box = self.boxes.bounding_boxes[0]
                     self.tracking = True
@@ -209,33 +238,24 @@ class Tracker(PluginNode):
                 else:
                     self.get_logger().debug(f"\nEmpty list of bounding boxes\n")
 
-        else:
-            self.get_logger().debug(f"\n#Boxes updated!#\n")
-            self.boxes = boxes_msg
-
             ### test to track someone without the llm and the hand gesture plugin
-            """
-            if self.boxes is not None and self.boxes.bounding_boxes != []:
-                if self.i == 0:
-                    self.tracking = True
-                    bounding_boxes = copy(self.boxes.bounding_boxes)
 
-                    self.pilot_box = copy(bounding_boxes[0])
-                    midpoint = calculate_midpoint_box(self.pilot_box)
+            # if self.boxes is not None and self.boxes.bounding_boxes != []:
+            #     if self.i == 0:
+            #         self.tracking = True
+            #         bounding_boxes = copy(self.boxes.bounding_boxes)
 
-                    self.get_logger().info(
-                        f"\nTest found the pilot person indicated in the tracking signal. Midpoint : {midpoint}\n"
-                    )
+            #         self.pilot_box = copy(bounding_boxes[0])
+            #         midpoint = calculate_midpoint_box(self.pilot_box)
 
-                    self.publisher_pilot.publish(self.pilot_box)
+            #         self.get_logger().info(
+            #             f"\nTest found the pilot person indicated in the tracking signal. Midpoint : {midpoint}\n"
+            #         )
 
-                if self.i == 70:
-                    self.tracking = False
+            #         self.publisher_pilot.publish(self.pilot_box)
 
-                if self.i == 100:
-                    self.tracking = True
-                self.i += 1
-            """
+            #     self.i += 1
+
             ### end test
 
     ######################### Second subscriber ####################################################################################################
@@ -245,7 +265,7 @@ class Tracker(PluginNode):
             f"\n!!!Tracking signal received from llm module {signal_msg}!!!\n"
         )
 
-        if self.mode == "llm":
+        if self.tracking_mode == "llm":
 
             # test to track someone without the llm
             # signal_msg.data = '{"action": "tracking", "id": 0, "info": {"bottom_right": [0.5055210590362549, 1.0], "top_left": [0.2135268896818161, 0.03876398876309395], "YOLO_id": 2, "objects": []}}'
@@ -289,6 +309,7 @@ class Tracker(PluginNode):
 
         if self.boxes is not None:
 
+            # trying to find the box of the pilot based on ID first, then based on overlapping area if Id fails
             for box in self.boxes.bounding_boxes:
                 if box.box_class == self.target_class:
                     overlap = overlapping_area(
@@ -298,6 +319,7 @@ class Tracker(PluginNode):
                         self.tracking = True
                         self.pilot_box = copy(box)
                         self.midpoint_queue.append(self.pilot_box)
+                        self.no_update_count = 0
                         self.get_logger().info(
                             f"\nBased on ID , Started tracking {self.pilot_box}\n"
                         )
@@ -318,6 +340,7 @@ class Tracker(PluginNode):
                 self.tracking = True
                 self.pilot_box = copy(best_box)
                 self.midpoint_queue.append(self.pilot_box)
+                self.no_update_count = 0
                 self.get_logger().info(
                     f"\Based on overlap, Started tracking {self.pilot_box}\n"
                 )
@@ -333,7 +356,7 @@ class Tracker(PluginNode):
             f"\n!!!Tracking signal received from hand gestures module {signal_msg}!!!\n"
         )
 
-        if self.mode == "hand":
+        if self.tracking_mode == "hand":
 
             infodict = json.loads(signal_msg.data)
 
@@ -388,6 +411,7 @@ class Tracker(PluginNode):
                 self.tracking = True
                 self.pilot_box = best_box
                 self.midpoint_queue.append(self.pilot_box)
+                self.no_update_count = 0
                 self.get_logger().info(f"\nStarted tracking\n")
         else:
             self.get_logger().debug(
@@ -407,16 +431,15 @@ class Tracker(PluginNode):
                 if not self.person_lost():
                     self.publisher_pilot.publish(self.pilot_box)
                 else:
-
                     self.tracking = False
-                    self.pilot_box = Box()
+                    self.pilot_box = None
                     self.get_logger().info(
                         f"\n#####\n#####\nWe lost the pilot person !! Tracking stopped\n#####\n#####\n"
                     )
 
             else:
                 self.get_logger().debug(
-                    "Not yet tracking for some reason. We don't publish the position of the pilot"
+                    "Not tracking. We don't publish the position of the pilot"
                 )
         else:
             self.get_logger().debug("Pilot box is None")
@@ -428,6 +451,8 @@ class Tracker(PluginNode):
 
         if self.boxes is not None:
             if self.pilot_box is not None:
+
+                # trying to update the position of the pilot based on ID first, then based on overlapping area if Id fails
                 for box in self.boxes.bounding_boxes:
                     overlap = overlapping_area(
                         self.pilot_box, box, self.overlapping_method
@@ -453,10 +478,10 @@ class Tracker(PluginNode):
                         best_box = copy(box)
 
                 if max_overlap_encountered == -1:
+                    self.no_update_count += 1
                     self.get_logger().debug(
                         f"\nNo update. Didn't find the pilot in the list of bounding boxes. Maybe the person is lost\n"
                     )
-                    self.no_update_count += 1
                 elif equal_box_msg(self.pilot_box, best_box):
                     self.no_update_count += 1
                     self.get_logger().debug(
@@ -478,8 +503,11 @@ class Tracker(PluginNode):
     def person_lost(self):
         """Function to call when someone is lost.
         Returns true when the person is lost and False else."""
-        if self.no_update_count >= self.max_no_update_before_lost:
-            return True
+        if self.no_update_count is not None:
+            if self.no_update_count >= self.max_no_update_before_lost:
+                return True
+            else:
+                return False
         else:
             return False
 
@@ -508,9 +536,42 @@ class Tracker(PluginNode):
     ######################### Second Publisher #####################################################################################################
     def tracking_status_callback(self):
         """This method is to publish the tracking status for other nodes of the package"""
+        # If we didn't update the bounding boxes recently, we stop the tracking, maybe the connexion is interrupted:
+        if (
+            self.last_received_bounding_boxes_time is not None
+            and self.get_clock().now().nanoseconds
+            - self.last_received_bounding_boxes_time
+            > 5e9
+        ):
+            self.tracking = False
+            self.pilot_box = None
+
         msg = Bool()
         msg.data = self.tracking
         self.publisher_tracking_status.publish(msg)
+
+    ######################### Service callback #####################################################################################################
+    def tracking_mode_service_callback(self, request, response):
+        """Callback function for the service to change the tracking mode"""
+        if request.tracking_mode in ["llm", "hand"]:
+            self.tracking_mode = request.tracking_mode
+
+            self.tracking = False
+            self.pilot_box = None
+
+            self.get_logger().info(
+                f"Tracking stopped to change mode",
+                f"\nTracking mode changed to {self.tracking_mode} via service\n",
+            )
+            response.status = True
+        else:
+            self.get_logger().warning(
+                f"\nTracking mode {request.tracking_mode} is not a valid tracking mode. It should be either 'llm' or 'hand'\n",
+                f"Tracking continues and tracking mode unchanged : {self.tracking_mode}\n",
+            )
+            response.status = False
+
+        return response
 
     ####################### Tick method ###########################################################################################################
     def tick(self, blackboard: Optional[dict["str", Any]] = None) -> NodeState:
@@ -518,12 +579,24 @@ class Tracker(PluginNode):
         It gets called 20 times a second if state=RUNNING
         Here we call callback functions to publish a detection frame and the list of bounding boxes.
         """
-
         self.pilot_callback()
         self.tracking_status_callback()
 
+        # Updating the blackboard with the current tracking mode for consistency with the Behaviour tree.
+        try:
+            if blackboard is not None:
+                blackboard_tracking_mode = blackboard.get("tracking_mode")
+
+                if self.tracking_mode != blackboard_tracking_mode:
+                    blackboard["tracking_mode"] = self.tracking_mode
+
+        except Exception as e:
+            self.get_logger().error(f"Error updating blackboard tracking mode: {e}")
+
+        # Rotating when the person is lost
         if self.person_lost():
             self.get_logger().debug("Pilot person lost")
+
             rotation_direction = self.direction_person_lost()
 
             if rotation_direction is not None and blackboard is not None:
@@ -538,7 +611,7 @@ class Tracker(PluginNode):
                     "rotation_direction": rotation_direction,
                     "rotation_angle": self.rotation_angle,
                     "rotation_speed": self.rotation_speed,
-                    "total_rotated_angle": current_angle + self.rotation_angle,
+                    "total_rotated_angle": current_angle,
                 }
 
             return NodeState.FAILURE
@@ -557,7 +630,8 @@ def main(args=None):
     # Node instantiation
     tracker = Tracker("tracker_node")
 
-    # tracker.get_logger().set_level(rclpy.logging.LoggingSeverity.DEBUG)
+    # uncomment to see debug logs
+    tracker.get_logger().set_level(rclpy.logging.LoggingSeverity.DEBUG)
 
     # Execute the callback function until the global executor is shutdown
     rclpy.spin(tracker)

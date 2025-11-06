@@ -21,6 +21,7 @@ def generate_launch_description():
         package="object_following_plugin",
         executable="tracker_node",
         parameters=[param_file],
+        output="log",
     )
 
     commands_node = Node(

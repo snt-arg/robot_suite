@@ -209,9 +209,6 @@ class SpotBT(py_trees.composites.Sequence):
                                             RotateTello("dummy", self.node),
                                         ),
                                         SitAction("SitPersonLost", self.node),
-                                        # Test
-                                        # py_trees.behaviours.Success("SuccessDummy3"),
-                                        # end test
                                     ],
                                 ),
                                 RotateTello("RotateTello", self.node),
@@ -223,12 +220,11 @@ class SpotBT(py_trees.composites.Sequence):
             ],
         )
 
-        # , battery_checker, remote_operator, plugins
-        # self.add_children([robot_connection, battery_checker, remote_operator, plugins])
+        self.add_children([robot_connection, battery_checker, remote_operator, plugins])
 
         # test
         # self.add_children([robot_connection, remote_operator, plugins])
-        self.add_children([remote_operator, plugins])
+        # self.add_children([remote_operator, plugins])
         # end test
 
 

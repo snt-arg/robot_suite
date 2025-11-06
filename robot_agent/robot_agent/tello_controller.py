@@ -59,6 +59,8 @@ DICTIONARY_YOLO_OBJECTS = {
     45: "bowl",
     46: "banana",
     47: "apple",
+    63: "laptop",
+    66: "keyboard",
     67: "cell phone",
     73: "book",
 }
@@ -86,7 +88,7 @@ class TelloController(Node):
 
     # tracking topics
     tracking_status_topic = "/tracking_status"  # Topic specifying whether or not the tracking is still ongoing
-    tracking_signal_topic = "/tracking_signal"  # Topic on which th signal to track a specific person is sent
+    tracking_signal_topic = "/tracking_signal_llm"  # Topic on which th signal to track a specific person is sent
     person_info_topic = "/tracking_info"  # Topic on which information about detected persons and objects are sent
 
     def __init__(self, robot_name: str = "tello"):
@@ -581,18 +583,16 @@ class TelloController(Node):
         self.tracking_confirmation_received.clear()
         self.current_tracking_object = object_name
 
-        node = globals().get("node")
-        if node:
-            node.get_logger().info(
-                f"Attempting to track a person with a '{self.current_tracking_object}'. Searching for 5 seconds..."
-            )
+        self.get_logger().info(
+            f"Attempting to track a person with a '{self.current_tracking_object}'. Searching for 5 seconds..."
+        )
 
         success = self.tracking_confirmation_received.wait(timeout=5.0)
 
         if success:
             response = f"Successfully found and locked on to person with '{self.current_tracking_object}'."
-            if node:
-                node.get_logger().info(response)
+
+            self.get_logger().info(response)
 
             time_str = time.strftime("%H:%M:%S")
             print(Fore.CYAN + f"[{time_str}] End tracking time..")
@@ -601,8 +601,8 @@ class TelloController(Node):
         else:
             self.current_tracking_object = None
             response = f"Failed to find a person with a '{object_name}' within 5 seconds. Please ensure they and the object are visible."
-            if node:
-                node.get_logger().warn(response)
+
+            self.get_logger().warn(response)
 
             time_str = datetime.now().strftime("%H:%M:%S:%f")
             print(Fore.CYAN + f"[{time_str}] End start_tracking tool time..")
@@ -762,7 +762,7 @@ class TelloController(Node):
             If the user selects 'hand', he has to know that he has to use the hands to control the drone, all the options are in the image window.
             If the user selects 'tracking', tracking': Start tracking a person holding a specific object.
             When using this mode, you must also provide the 'object_name' parameter.
-            Choose the object from this list: [backpack, umbrella, handbag, bottle, cup, fork, knife, spoon, bowl, banana, apple, cell phone, book].
+            Choose the object from this list: [backpack, umbrella, handbag, bottle, cup, fork, knife, spoon, bowl, banana, apple, cell phone, book, laptop, keyboard].
             If the user selects 'stop tracking': Stop the current tracking task.
 
             :param mode: The desired control mode as a string (e.g., "keyboard", "hand", "tracking", "stop tracking").
@@ -777,7 +777,7 @@ class TelloController(Node):
             up to 5 seconds for a person holding this object to be detected. The drone MUST be in the air.
 
             First, you MUST choose the most similar object from this list of available options:
-            [backpack, umbrella, handbag, bottle, cup, fork, knife, spoon, bowl, banana, apple, cell phone, book]
+            [backpack, umbrella, handbag, bottle, cup, fork, knife, spoon, bowl, banana, apple, cell phone, book, laptop, keyboard]
             Match the user's request to an object in the list. For example, if the user asks for a "phone", choose "cell phone".
             If you cannot find a clear match, respond by saying "There are no similar objects to track."
             :param object_name: str - The chosen object name from the list.

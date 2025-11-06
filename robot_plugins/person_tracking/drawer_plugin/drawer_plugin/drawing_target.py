@@ -2,6 +2,9 @@
 import rclpy
 from rclpy.node import Node
 
+# Message synchronization
+from message_filters import ApproximateTimeSynchronizer, Subscriber
+
 # ROS messages
 from sensor_msgs.msg import Image
 from std_msgs.msg import Bool

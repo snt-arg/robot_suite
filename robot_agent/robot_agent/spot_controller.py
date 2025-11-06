@@ -42,6 +42,8 @@ DICTIONARY_YOLO_OBJECTS = {
     45: "bowl",
     46: "banana",
     47: "apple",
+    63: "laptop",
+    66: "keyboard",
     67: "cell phone",
     73: "book",
 }
@@ -75,7 +77,7 @@ class SpotController(Node):
 
     # tracking topics
     tracking_status_topic = "/tracking_status"  # Topic specifying whether or not the tracking is still ongoing
-    tracking_signal_topic = "/tracking_signal"  # Topic on which th signal to track a specific person is sent
+    tracking_signal_topic = "/tracking_signal_llm"  # Topic on which th signal to track a specific person is sent
     person_info_topic = "/tracking_info"  # Topic on which information about detected persons and objects are sent
 
     def __init__(self, robot_name: str = "Spot") -> None:
@@ -964,7 +966,7 @@ class SpotController(Node):
             If the user selects 'hand', he has to know that he has to use the hands to control the robot dog, all the options are in the image window.
             If the user selects 'tracking', tracking': Start tracking a person holding a specific object.
             When using this mode, you must also provide the 'object_name' parameter.
-            Choose the object from this list: [backpack, umbrella, handbag, bottle, cup, fork, knife, spoon, bowl, banana, apple, cell phone, book].
+            Choose the object from this list: [backpack, umbrella, handbag, bottle, cup, fork, knife, spoon, bowl, banana, apple, cell phone, book, laptop, keyboard].
             If the user selects 'stop tracking': Stop the current tracking task.
 
             :param mode: The desired control mode as a string (e.g., "keyboard", "hand", "tracking", "stop tracking").
@@ -979,7 +981,7 @@ class SpotController(Node):
             up to 5 seconds for a person holding this object to be detected. The robot MUST be  standing.
 
             First, you MUST choose the most similar object from this list of available options:
-            [backpack, umbrella, handbag, bottle, cup, fork, knife, spoon, bowl, banana, apple, cell phone, book]
+            [backpack, umbrella, handbag, bottle, cup, fork, knife, spoon, bowl, banana, apple, cell phone, book, laptop, keyboard]
             Match the user's request to an object in the list. For example, if the user asks for a "phone", choose "cell phone".
             If you cannot find a clear match, respond by saying "There are no similar objects to track."
             :param object_name: str - The chosen object name from the list.
