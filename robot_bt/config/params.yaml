@@ -1,5 +1,5 @@
 bt_server:
     ros__parameters:
-        bt_name: person_tracking_bt # Name of the behavior tree
-        tick_freq: 30 #60 # Hz
+        bt_name: tello_bt # Name of the behavior tree
+        tick_freq: 60 # Hz
         stop_on_failure: false # Whether it should stop the tree from executing if the root fails.

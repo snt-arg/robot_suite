@@ -176,7 +176,7 @@ case "$1" in
         common_install
 
         print_info "Building suite"
-        colcon build --symlink-install
+        colcon build --symlink-install --packages-ignore tellopy
         ;;
     unitree_go1)
         echo "Not yet supported,"

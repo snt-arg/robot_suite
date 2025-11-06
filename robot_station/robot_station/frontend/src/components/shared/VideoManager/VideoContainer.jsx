@@ -4,69 +4,38 @@ import { useRosSub } from "../utils/useRosSub";
 
 import { RenderImage } from "../gui/RenderImage";
 
-/*Image types*/
-const rawImageType = "/sensor_msgs/msg/Image"; // Adjust this to the correct message type if needed
+import { videoTypes, displayModes } from "../utils/dataDicts";
 
-const compressedImageType = "/sensor_msgs/msg/CompressedImage"; // Adjust this to the correct message type if needed
+const throttleRate = 100; // Adjust the throttle rate as needed
 
+export function VideoContainer({ displayMode, robotName }) {
+    let topic = null;
+    let messageType = null;
+    let altText = null;
 
-/*Topic names*/
-const topicRawCompressed = "/camera/image_raw/compressed"; // Default topic for compressed images
-const topicRaw = "/camera/image_raw"; // Default topic for raw images
-const topicAnnotatedHands = "/hand/annotated/image/compressed";
-const topicAllDetected = "/camera/all_detected/compressed";
-const topicPersonTracked = "/camera/person_tracked/compressed";
-const topicPersonTrackedHands = "/camera/hands/person_tracked/compressed";
+    if (displayMode === displayModes.raw) {
+        topic = videoTypes[displayMode][robotName].topic;
+        messageType = videoTypes[displayMode][robotName].imgMsgType;
+        altText = videoTypes[displayMode][robotName].altText;
+    } else {
+        topic = videoTypes[displayMode].topic;
+        messageType = videoTypes[displayMode].imgMsgType;
+        altText = videoTypes[displayMode].altText;
+    }
 
-const throttleRate = 100; // Adjust the throttle rate as needed 
-
-const videoTypes = {
-    "raw": {
-        topic: topicRawCompressed,
-        imgMsgType: compressedImageType,
-        alt_text: "Raw Images"
-    },
-    "annotatedHands": {
-        topic: topicAnnotatedHands,
-        imgMsgType: compressedImageType,
-        altText: "Annotated Hands"
-
-    },
-    "allDetected": {
-        topic: topicAllDetected,
-        imgMsgType: compressedImageType,
-        altText: "All Detected"
-
-    },
-    "personTracked": {
-        topic: topicPersonTracked,
-        imgMsgType: compressedImageType,
-        altText: "Person Tracked"
-
-    },
-    "personTrackedHands": {
-        topic: topicPersonTrackedHands,
-        imgMsgType: compressedImageType,
-        altText: "Person Tracked Hands"
-
-    },
-}
-export function VideoContainer({ displayMode }) {
-    const subscriber = useRosSub(videoTypes[displayMode].topic, videoTypes[displayMode].imgMsgType, throttleRate);
+    const subscriber = useRosSub(topic, messageType, throttleRate);
     const [imgSrc, setImgSrc] = useState("");
 
     useEffect(() => {
-
         if (subscriber) {
             let newImgSrc = String(JSON.parse(subscriber).data);
-            setImgSrc(s => newImgSrc);
+            setImgSrc((s) => newImgSrc);
         }
-
     }, [subscriber]);
 
     return (
         <div className="video-container">
-            <RenderImage imgSrc={imgSrc} altText={videoTypes[displayMode].altText} />
+            <RenderImage imgSrc={imgSrc} altText={altText} />
         </div>
     );
 }

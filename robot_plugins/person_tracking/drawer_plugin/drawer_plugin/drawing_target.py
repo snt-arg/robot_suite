@@ -2,8 +2,12 @@
 import rclpy
 from rclpy.node import Node
 
-# ROS image message
+# Message synchronization
+from message_filters import ApproximateTimeSynchronizer, Subscriber
+
+# ROS messages
 from sensor_msgs.msg import Image
+from std_msgs.msg import Bool
 
 # person tracked messages
 from person_tracking_msgs.msg import Box
@@ -26,11 +30,13 @@ class DrawTarget(Node):
     image_annotated_hands_topic = "/hand/annotated/image"
     drawing_person_tracked_topic = "/camera/person_tracked"
     drawing_person_tracked_and_hands_topic = "/camera/hands/person_tracked"
+    tracking_status_topic = "/tracking_status"
 
     # subscribers
     sub_image_raw = None
     sub_person_tracked = None
     sub_annotated_hands = None
+    sub_tracking_status = None
 
     # publishers
     publisher_drawing = None
@@ -73,6 +79,8 @@ class DrawTarget(Node):
 
         self.update_time_hands_annotated = self.get_clock().now().nanoseconds
 
+        self.tracking = False
+
     def _init_parameters(self) -> None:
         """Method to initialize parameters such as ROS topics' names"""
 
@@ -88,6 +96,9 @@ class DrawTarget(Node):
             "drawing_person_tracked_and_hands_topic",
             self.drawing_person_tracked_and_hands_topic,
         )
+
+        self.declare_parameter("tracking_status_topic", self.tracking_status_topic)
+
         self.declare_parameter("publishing_rate", self.publishing_rate)
 
         self.image_raw_topic = (
@@ -112,6 +123,12 @@ class DrawTarget(Node):
         )
         self.drawing_person_tracked_and_hands_topic = (
             self.get_parameter("drawing_person_tracked_and_hands_topic")
+            .get_parameter_value()
+            .string_value
+        )
+
+        self.tracking_status_topic = (
+            self.get_parameter("tracking_status_topic")
             .get_parameter_value()
             .string_value
         )
@@ -147,7 +164,11 @@ class DrawTarget(Node):
             5,
         )
 
-    ########################### First Subscriber ###########################################################################################
+        self.sub_tracking_status = self.create_subscription(
+            Bool, self.tracking_status_topic, self.tracking_status_callback, 5
+        )
+
+    ########################### Subscribers ###########################################################################################
     #
     def image_raw_listener_callback(self, img_msg):
         """Callback function for the subscriber node (to topic /camera/image_raw).
@@ -180,6 +201,11 @@ class DrawTarget(Node):
 
         self.pilot_box = msg
 
+    def tracking_status_callback(self, msg):
+        """Method to receive the tracking status"""
+        self.tracking = msg.data
+        self.get_logger().debug(f"Tracking status : {self.tracking}")
+
     ######################### Publisher #####################################################################################################
     def drawing_person_tracked_callback(self):
         """This methods is the callback function for the publisher of images where
@@ -187,47 +213,50 @@ class DrawTarget(Node):
 
         if self.get_clock().now().nanoseconds - self.update_time_raw < 1e8:
 
-            image_drawn = self.draw_rectangle(self.image)
+            if self.tracking:
+                image_drawn = self.draw_rectangle(self.image)
 
-            if image_drawn is not None:
+            else:
+                image_drawn = self.image
+
+            try:
                 self.publisher_drawing.publish(
                     self.cv_bridge.cv2_to_imgmsg(image_drawn, "rgb8")
                 )
-                self.get_logger().debug("Publishing pilot person frameNones")
+                self.get_logger().debug("Publishing pilot person frames")
+
+            except Exception as e:
+                self.get_logger().debug(f"An error occurred, {e}")
 
         else:
-            self.get_logger().warning(
-                "Haven't received raw frames since: "
-                + str((self.get_clock().now().nanoseconds - self.update_time_raw) / 1e9)
-                + " seconds",
+            self.get_logger().debug(
+                f"Haven't received raw frames since: {(self.get_clock().now().nanoseconds - self.update_time_raw) / 1e9} seconds"
             )
 
     def drawing_person_tracked_hands_callback(self):
         """This methods is the callback function for the publisher of images where
         ONLY the target person and HAND LANDMARKS are highlighted."""
 
-        if (
-            self.get_clock().now().nanoseconds - self.update_time_handsNone_annotated
-            < 1e8
-        ):
-            image_drawn_and_hands = self.draw_rectangle(self.image_annotated_hands)
+        if self.get_clock().now().nanoseconds - self.update_time_hands_annotated < 1e8:
+            if self.tracking:
 
-            if image_drawn_and_hands is not None:
+                image_drawn_and_hands = self.draw_rectangle(self.image_annotated_hands)
+
+            else:
+                image_drawn_and_hands = self.image_annotated_hands
+
+            try:
                 self.publisher_drawing_and_hands.publish(
                     self.cv_bridge.cv2_to_imgmsg(image_drawn_and_hands, "rgb8")
                 )
                 self.get_logger().debug("Publishing pilot person and hands frames")
+
+            except Exception as e:
+                self.get_logger().debug(f"An error occurred, {e}")
+
         else:
-            self.get_logger().warn(
-                "Haven't received hand annotated frames since: ",
-                str(
-                    (
-                        self.get_clock().now().nanoseconds
-                        - self.update_time_hands_annotated
-                    )
-                )
-                / 1e9,
-                " seconds",
+            self.get_logger().debug(
+                f"Haven't received hand annotated frames since: {(self.get_clock().now().nanoseconds - self.update_time_hands_annotated)/ 1e9} seconds"
             )
 
     def draw_rectangle(self, image):
@@ -261,13 +290,14 @@ class DrawTarget(Node):
             )
 
             # Drawing midpoint circle
-            cv2.circle(image, circle_center, 5, (86, 237, 81), -1)
+            cv2.circle(image, circle_center, 2, (86, 237, 81), -1)
 
             # drawing text annotation container
             cv2.rectangle(
                 image,
                 (top_left_point_x, top_left_point_y),
-                (top_left_point_x + 3, top_left_point_y + 3)(86, 237, 81),
+                (top_left_point_x + 70, top_left_point_y + 15),
+                (86, 237, 81),
                 -1,
             )
 
@@ -275,10 +305,11 @@ class DrawTarget(Node):
             cv2.putText(
                 img=image,
                 text="Target",
-                org=(top_left_point_x + 1, top_left_point_y + 1),
-                fontScale=1.0,
+                org=(top_left_point_x + 1, top_left_point_y + 15),
+                fontScale=0.5,
+                fontFace=cv2.FONT_HERSHEY_COMPLEX,
                 color=(255, 255, 255),
-                thickness=2,
+                thickness=0,
             )
 
             return image
@@ -294,7 +325,7 @@ def main(args=None):
     rclpy.init(args=args)
 
     # Node instantiation
-    draw_target = DrawTarget("pilot_person_drawer_llm_node")
+    draw_target = DrawTarget("drawer_node")
     # draw_target.get_logger().set_level(rclpy.logging.LoggingSeverity.DEBUG)
 
     # Execute the callback function until the global executor is shutdown

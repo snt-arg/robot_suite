@@ -12,12 +12,11 @@ export default function App() {
             <BrowserRouter>
                 <Routes>
                     <Route path="/">
-                        <Route path="welcome" element={<WelcomePage />} />
+                        <Route path="/" element={<WelcomePage />} />
                         <Route path="info/Spot" element={<SpotInfo />} />
                         <Route path="info/Tello" element={<TelloInfo />} />
                         <Route path="info/Go1" element={<Go1Info />} />
                         <Route path="interface" element={<InterfacePage />} />
-
                         <Route path="*" element={<h2>Page not found</h2>} />
                     </Route>
                 </Routes>

@@ -1,62 +1,48 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { useRosPub } from "../utils/useRosPub";
+import { sharedkeyToMovement } from "../utils/dataDicts"; // shared key to movement mapping
+import { commandInterpreter } from "../utils/utils"; //interprets keyboard commands into velocity messages
+import { robotToVelocityTopicAndMessageType } from "../utils/dataDicts";
 
-import { commandInterpreter } from "../utils/utils";//interprets keyboard commands into velocity messages
+import { telloCommandInterpreter } from "../../tello/telloCommandInterpreter";
+import { spotCommandInterpreter } from "../../spot/spotCommandInterpreter";
+import { go1CommandInterpreter } from "../../go1/go1CommandInterpreter";
 
-
-const keyToMovement = {
-    "w": "forward",
-    "a": "left",
-    "s": "backward",
-    "d": "right",
-    "arrowup": "up",
-    "arrowdown": "down",
-    "arrowleft": "rotateLeft",
-    "arrowright": "rotateRight",
-    " ": "stop"
+const robotToSpecificInterpreter = {
+    tello: telloCommandInterpreter,
+    spot: spotCommandInterpreter,
+    go1: go1CommandInterpreter,
 };
 
+export function KeyboardControl({ robotName }) {
+    const { topic, messageType } =
+        robotToVelocityTopicAndMessageType[robotName.toLowerCase()];
 
-export function KeyboardControl({ topic, messageType }) {
     const publish = useRosPub(topic, messageType);
 
-    /* Just to test on Tello 1*/
-    const publishTakeoff = useRosPub("/takeoff", "std_msgs/msg/Empty");
-    const publishLand = useRosPub("/land", "std_msgs/msg/Empty");
-    /* End just to test on Tello 1 */
+    let baseVelocity = 0.5;
 
     useEffect(() => {
-
         const keyboardCommandHandler = (event) => {
-
             let key = String(event.key).toLowerCase();
 
-            /* Just to test on Tello 2*/
-            if (key === "t") {
-                publishTakeoff("Empty");
+            if (key in sharedkeyToMovement) {
+                let direction = sharedkeyToMovement[key];
+                let command = commandInterpreter(direction, baseVelocity);
+                if (command !== null && command !== undefined) {
+                    publish(command);
+                }
             }
-            else if (key === "l") {
-                publishLand("Empty");
-            }
-
-            /* End just to test on Tello 1 */
-
-            else {
-                let baseVelocity = 0.5;
-                let direction = keyToMovement[key];
-
-                publish(commandInterpreter(direction, baseVelocity));
-
-            }
-
-
-        }
-
+            // else {
+            //     robotToSpecificInterpreter[robotName](key, baseVelocity);
+            // }
+        };
 
         window.addEventListener("keydown", keyboardCommandHandler);
 
-        return () => { window.removeEventListener("keydown", keyboardCommandHandler) };
-
+        return () => {
+            window.removeEventListener("keydown", keyboardCommandHandler);
+        };
     }, []);
 
     return <></>;

@@ -58,7 +58,7 @@ class ObjectDetector(PluginNode):
     minimum_prob = 0.4
 
     # Variable to perform object detection on only some frames
-    process_frames = 1
+    process_interval = 1e5
 
     # topic names
     image_raw_topic = "/camera/image_raw"  # raw image frames from the drone's camera
@@ -102,14 +102,14 @@ class ObjectDetector(PluginNode):
         # Variable to contain the frame coming directly from the drone
         self.image_raw = None
 
+        # Variable containing the time most recent time in nanoseconds when we received a raw image
+        self.last_received_time = None
+
         # Variable to hold each frame after object detection. It contains all persons detected
         self.image_all_detected = None
 
         # Variable containing all bounding boxes' coordinates for a single frame
         self.boxes = None
-
-        # Counter to track how many frames were received.
-        self.frame_counter = 0
 
     ################################ Init functions ##################################################################################
     def _init_model(self) -> None:
@@ -147,7 +147,7 @@ class ObjectDetector(PluginNode):
 
         # other
         self.declare_parameter("minimum_prob", self.minimum_prob)
-        self.declare_parameter("process_frames", self.process_frames)
+        self.declare_parameter("process_interval", self.process_interval)
 
         self.image_raw_topic = (
             self.get_parameter("image_raw_topic").get_parameter_value().string_value
@@ -185,8 +185,8 @@ class ObjectDetector(PluginNode):
             self.get_parameter("minimum_prob").get_parameter_value().double_value
         )
 
-        self.process_frames = (
-            self.get_parameter("process_frames").get_parameter_value().integer_value
+        self.process_interval = (
+            self.get_parameter("process_interval").get_parameter_value().double_value
         )
 
     def _init_publishers(self) -> None:
@@ -211,22 +211,11 @@ class ObjectDetector(PluginNode):
         For each image processed, it saves in the log that an image has been processed.
         Then converts that image into cv2 format before performing object detection on that image and saving
         the result in self.image_all_detected"""
-        # Log
-        self.get_logger().debug(f"Frame N°{self.frame_counter} received")
 
-        # processing only a fraction of frames to reduce computing power consumption
-        if self.frame_counter % self.process_frames == 0:
+        self.last_received_time = self.get_clock().now().nanoseconds
 
-            # Logs
-            self.get_logger().debug(f"Frame N°{self.frame_counter} processed")
-
-            # performing object detection
-            self.image_raw = self.cv_bridge.imgmsg_to_cv2(
-                img, "rgb8"
-            )  # converting ROS Image message to cv2 image
-            self.detection(self.image_raw)  # performing detection on the cv2 image
-
-        self.frame_counter += 1
+        # converting ROS Image message to cv2 image
+        self.image_raw = self.cv_bridge.imgmsg_to_cv2(img, "rgb8")
 
     def detection(self, frame) -> None:
         """Function to perform person object detection on a single frame.
@@ -271,15 +260,26 @@ class ObjectDetector(PluginNode):
         callback funtion for the publisher node (to topic /camera/image_detected).
         The image on which object detection has been performed (self.image_all_detected) is published on the topic '/all_detected'
         """
-        if self.image_all_detected is None:
-            self.get_logger().debug(
-                "Can't publish frames on which object detection was performed.\n No image has been received from the drone yet"
-            )
+
+        # processing only a some frames to reduce computing power consumption
+        if self.last_received_time is not None and (
+            (self.get_clock().now().nanoseconds - self.last_received_time)
+            > self.process_interval
+        ):
+
+            self.detection(self.image_raw)  # performing detection on the cv2 image
+
+            try:
+                self.publisher_all_detected.publish(
+                    self.cv_bridge.cv2_to_imgmsg(self.image_all_detected, "rgb8")
+                )
+                self.get_logger().debug("Publishing a frame on all detected topic")
+            except Exception as e:
+                self.get_logger().error("An error occured, ", e)
         else:
-            self.publisher_all_detected.publish(
-                self.cv_bridge.cv2_to_imgmsg(self.image_all_detected, "rgb8")
+            self.get_logger().debug(
+                "No raw images received yet. Cannot perform object detection"
             )
-            self.get_logger().debug("Publishing a frame on all detected topic")
 
     def bounding_boxes_callback(self) -> None:
         """

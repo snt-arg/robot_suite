@@ -18,6 +18,8 @@ setup(
     license="GPL-3.0",
     tests_require=["pytest"],
     entry_points={
-        "console_scripts": ["robot_agent = robot_agent.llm_agent:main"],
+        "console_scripts": [
+            "robot_agent_node = robot_agent.llm_agent:main",
+        ],
     },
 )

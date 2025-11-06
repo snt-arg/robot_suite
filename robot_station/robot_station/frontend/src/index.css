@@ -9,6 +9,17 @@
   font-family: "Mokoto" ;
   src: url('/assets/mokoto/Mokoto\ Demo.ttf'),
 }
+
+@font-face {
+  font-family:"Delius" ;
+  src: url('/assets/Delius/Delius-Regular.ttf'),
+  url('/assets/Indie_Flower,Roboto/Roboto/Roboto-VariableFont_wdth,wght.ttf');
+}
+
+@font-face {
+  font-family: "Oxanium";
+  src: url("/assets/Oxanium/Oxanium-VariableFont_wght.ttf");
+}
 :root {
   font-family: "Kode Mono",'Lucida Console', monospace, sans-serif;
   line-height: 1.5;
@@ -117,7 +128,7 @@ font-size: x-large;
 font-family: "Kode Mono",'Lucida Console', monospace, sans-serif;
 font-weight: 100;
 font-optical-sizing: auto;
-  font-style: normal;
+font-style: normal;
 margin: 0%;
 }
 
@@ -155,8 +166,6 @@ margin: 0%;
   border-style: dotted ;
   border-color: white;
 }
-
-
 
 
 .carousel{
@@ -223,21 +232,35 @@ margin: 0%;
 }
 .left-div-interface{
   order: 1;
-  width:10%;
+  width:9%;
   height:70%;
   overflow: hidden;
   margin: auto;
 
 }
 
-.middle-div-interface{
+.video-div{
   order: 2;
   width:80%;
   height:70%;
-  overflow: hidden;
+  overflow:scroll;
   margin: auto;
+  background: radial-gradient( rgb(44, 44, 44) 20%, black 70%);
+  border-color: #6d6d6d ;
+  border-width: 0.5%;
+  border-style: solid;
 
 }
+
+.video-div img{
+  
+  display: inline-block;
+  margin: auto;
+  width:100%;
+  
+}
+
+
 
 .right-div-interface{
   order: 3;
@@ -252,24 +275,10 @@ margin: 0%;
   order: 4;
   width:100%;
   height:20%;
-
-}
-
-.right-div-interface{
-  order: 3;
-  width:10%;
-  height:70%;
-  overflow: hidden;
+  overflow:hidden;
   margin: auto;
-
-}
-
-.controls-div-interface{
-  overflow:visible;
-  margin: auto;
-  display: flex;
+  display:flex;
   align-items: center;
-
 }
 
 
@@ -288,21 +297,13 @@ margin: 0%;
 .change-display-button{
   
   background-color: #4B003F;
-  
-  
-
 }
 
 
 .change-plugin-button{
-  background-color: #d4bdff;
+  background-color: #370150;
 
 }
-
-
-
-
-
 
 
 .controls-div-interface .futuristic-button {
@@ -311,4 +312,181 @@ margin: 0%;
   margin: 0;
   background-color: #1d1e21;
   
+}
+
+.keyboard-control{
+
+}
+
+.joystick-control{
+  display: inline-flex;
+
+  width:70%;
+  margin: auto;
+}
+
+.joystick-left{
+  display: inline-block;
+  margin-right: 30%;
+ 
+
+}
+
+.joystick-right{
+  display: inline-block;
+  margin-left: 30%;
+  
+
+}
+
+
+
+.hand-control{
+  position:absolute;
+  top:11%;
+  right:11%;
+  opacity: 70%;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.hand-control img{
+ width: 60%;
+}
+
+
+.llm-control{
+  width: 90%;
+  display: flex;
+  margin: auto;
+  
+}
+.input-div{
+  display: block;
+  margin: auto;
+  max-width: 100%;
+  max-height: fit-content;
+  padding: auto;
+  
+
+
+}
+
+.input-div textarea{
+  resize: none;
+  width: 100%;
+  font-family: "Delius", Verdana, Geneva, Tahoma, sans-serif;
+  letter-spacing: 0.2vw;
+
+}
+
+
+.submit-button{
+  max-width:30%;
+  max-height: fit-content;
+  width:fit-content;
+  height: 100%;
+
+  margin: auto;
+  padding: auto;
+
+  display: inline-block;
+  cursor: pointer; 
+  
+  text-decoration: none;
+  letter-spacing: 0.01vw;
+  text-align: center;
+  border-width: 0.01vw;
+  border-style: solid ;
+  border-color: var(--font-dark-gray);
+  
+  background: #07441588!important;
+  
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  color: white;
+
+  transition: 0.5s;
+}
+
+.submit-button:hover{
+  background: #0f8328;
+  color: white ;
+  letter-spacing: 0.4vw;
+  box-shadow: 0vw 0vw 1vw rgb(175, 255, 192);
+  border-style: dashed;
+  border-color: white;
+}
+
+.chat-area{
+  position:absolute;
+  top:11%;
+  right:11%;
+  background-color: #370150a9;
+  width:20%;
+  height:65%;
+  border-radius: 5%;
+  overflow: scroll;
+  
+  
+
+}
+
+.chat-area p{
+  display: block;
+  margin: auto;
+  text-align: center;
+}
+
+.chat-area ul{
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-evenly;
+  flex-direction: column;
+  overflow: scroll;
+  width: 100%;
+  list-style-type: none;
+  padding: 0%;
+  
+
+}
+
+.msg-sent{
+  max-width:80%;
+  max-height: fit-content;
+  flex-grow: 1.5;
+  text-align: left;
+  align-self: self-end;
+  border-radius: 20%;
+  background-color: #ffa1b560;
+  padding: 1%;
+  font-size: 1vw;
+  font-family:"Delius", Verdana, Geneva, Tahoma, sans-serif;
+  margin-right:2%;
+  letter-spacing: 0.1vw;
+  overflow-wrap: break-word;
+  margin-bottom: 1%;
+  
+}
+.msg-sent::after{
+  content: ' <:🧑';
+}
+
+.msg-received{
+  max-width:80%;
+  max-height: fit-content;
+  flex-grow: 1.5;
+  background-color:#59a7ffab ;
+  border-radius:10%;
+  padding: 1%;
+  font-size: 1.2vw;
+  font-family:"Oxanium", Verdana, Geneva, Tahoma, sans-serif;
+  margin-left:2%;
+  overflow-wrap: break-word;
+  margin-bottom: 1%;
+}
+.msg-received::before{
+  content: '🤖:> ';
+
 }
