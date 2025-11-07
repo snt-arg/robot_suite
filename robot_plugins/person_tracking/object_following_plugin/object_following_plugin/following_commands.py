@@ -264,27 +264,25 @@ class FollowingCommands(PluginNode):
             # rotation
             if self.person_tracked_midpoint.x < self.lower_threshold_midpoint_to_rotate:
                 self.get_logger().debug("rotate left")
-                self.commands_msg.angular.z = self.angular_speed
 
-                # rotationThread = Thread(
-                #     target=self.rotation,
-                #     args=(self.angular_speed, self.target_angle),
-                #     daemon=True,
-                # )
-                # rotationThread.join()
+                ## test test to see if tracking improves
+                # reset other commands. When we rotate, we only rotate to avoid to crash into obstacles while searching for the person
+                self.commands_msg = Twist()
+                ## end test
+
+                self.commands_msg.angular.z = self.angular_speed
 
             elif (
                 self.person_tracked_midpoint.x
                 > self.higher_threshold_midpoint_to_rotate
             ):
                 self.get_logger().debug("rotate right")
+                ## test test to see if tracking improves
+                # reset other commands. When we rotate, we only rotate to avoid to crash into obstacles while searching for the person
+                self.commands_msg = Twist()
+                ## end test
+
                 self.commands_msg.angular.z = -self.angular_speed
-                # rotationThread = Thread(
-                #     target=self.rotation,
-                #     args=(-self.angular_speed, -self.target_angle),
-                #     daemon=True,
-                # )
-                # rotationThread.join()
 
             self.publisher_commands.publish(self.commands_msg)
 

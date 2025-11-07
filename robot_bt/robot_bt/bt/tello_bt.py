@@ -62,7 +62,7 @@ class TelloBT(py_trees.composites.Sequence):
             "person_tracking"  # or "landmark_detector_node"
         )
 
-        self.plugins_blackboard.tracking_mode = "llm"  # or "hand"
+        self.plugins_blackboard.tracking_mode = "hand"  # or "llm"
 
     def build_tree(self):
         drone_connection = py_trees.composites.Selector(

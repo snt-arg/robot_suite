@@ -1,5 +1,6 @@
 from person_tracking_msgs.msg import Box, PointMsg, AllBoundingBoxes
 from hand_gestures_msgs.msg import Landmarks
+from geometry_msgs.msg import Twist
 import json
 import math
 
@@ -298,4 +299,33 @@ def equal_allBoundingBoxes_msg(msg1: AllBoundingBoxes, msg2: AllBoundingBoxes):
             type(msg1),
             "Type of msg2:",
             type(msg2),
+        )
+
+
+def soften_commands(softening_coefficient: float, command_msgs: Twist):
+    """Function to soften the commands sent to the robot, given a softening coefficient between 0 and 1.
+    Constraints : The softening coefficient must be between 0 and 1.
+    Parameters :
+        - softening_coefficient : float between 0 and 1
+        - command_msgs : ROS2 geometry Twist message containing the commands to be softened
+    """
+    if isinstance(command_msgs, Twist):
+        if 0 <= softening_coefficient <= 1:
+            new_command_msgs = Twist()
+
+            new_command_msgs.linear.x = command_msgs.linear.x * softening_coefficient
+            new_command_msgs.linear.y = command_msgs.linear.y * softening_coefficient
+            new_command_msgs.linear.z = command_msgs.linear.z * softening_coefficient
+            new_command_msgs.angular.x = command_msgs.angular.x * softening_coefficient
+            new_command_msgs.angular.y = command_msgs.angular.y * softening_coefficient
+            new_command_msgs.angular.z = command_msgs.angular.z * softening_coefficient
+
+            return new_command_msgs
+        else:
+            raise ValueError(
+                "Error in soften_commands function: the softening coefficient must be between 0 and 1."
+            )
+    else:
+        raise TypeError(
+            "Error in soften_commands function: the command_msgs parameter is not of type Twist."
         )

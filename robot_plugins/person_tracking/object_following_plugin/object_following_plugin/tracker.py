@@ -44,7 +44,7 @@ class Tracker(PluginNode):
     tracking_status_topic = "/tracking_status"
 
     # tracking mode is either llm or hand
-    tracking_mode = "llm"  # or  "hand"
+    tracking_mode = "hand"  # or "llm"
 
     # service on which to send requests to change the tracking mode
     tracking_mode_srv = "/tracking_mode_srv"
