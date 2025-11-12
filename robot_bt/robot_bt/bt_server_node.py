@@ -1,17 +1,18 @@
 from collections import defaultdict
 import time
+import rclpy
 import py_trees
 from py_trees.trees import BehaviourTree
 from py_trees.blackboard import Client
 from rclpy import Optional
-from rclpy.logging import rclpy
+from rclpy.logging import get_logger
 from rclpy.node import Node
 from robot_bt.bootstrap import bootstrap_bt
 
 
 class BtServerNode(Node):
     _bt_tick_freq: int = 60  # Hz
-    _bt_name: str = "simple_bt" #"person_tracking_bt"
+    _bt_name: str = "simple_bt"  # "person_tracking_bt"
     _stop_on_failure: bool = False
     bt: Optional[BehaviourTree]
     _global_blackboard: Client
@@ -36,7 +37,7 @@ class BtServerNode(Node):
             self.bt = BehaviourTree(root=bootstrap_fn(self))
             self.bt.root.attach_blackboard_client("Global")
             self.bt.setup()
-            
+
         except:
             self.get_logger().error(f"Unable to bootstrap BT -> {self._bt_name}")
             self.bt = None
