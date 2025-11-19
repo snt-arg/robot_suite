@@ -13,7 +13,7 @@ services:
         network_mode: "host"
         tty: true
         stdin_open: true
-        command: "ros2 launch robot_bringup tello_launch.py"
+        command: "ros2 launch robot_bringup system_launch.py"
     spot_suite:
         image: ros:jazzy
         container_name: spot_suite_jazzy
@@ -29,4 +29,4 @@ services:
         network_mode: "host"
         tty: true
         stdin_open: true
-        command: "ros2 launch robot_bringup spot_launch.py"
+        command: "ros2 launch robot_bringup system_launch.py"
