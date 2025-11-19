@@ -1,4 +1,4 @@
-FROM ros:humble
+FROM ros:jazzy
 
 # Set this in the compose file instead
 # ENV RMW_IMPLEMENTATION=rmw_cyclonedds_cpp 
