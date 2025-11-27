@@ -177,7 +177,7 @@ def generate_launch_description():
     create_robot_bt_launch(ld)
     create_rosbridge_server_launch(ld)
     # create_video_interface_launch(ld)
-    # create_tello_control_station_launch(ld)
+    create_tello_control_station_launch(ld)
 
     # ------------------
     # -    Plugins     -

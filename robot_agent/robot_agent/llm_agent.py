@@ -25,6 +25,9 @@ import logging
 from robot_agent.spot_controller import SpotController
 from robot_agent.tello_controller import TelloController
 
+# from robot_agent.voice_input_output import VoiceInOut
+from robot_agent.voice_input_output import VoiceInOut
+
 
 init(autoreset=True)
 
@@ -310,6 +313,8 @@ class Agent(Node):
 # ROS init and run
 def main(args=None):
     rclpy.init(args=args)
+
+    # Robot setting up
     spot = SpotController("spot")
     tello = TelloController("tello")
 
@@ -317,6 +322,10 @@ def main(args=None):
     agent.add_robot(spot, spot.robot_name)
 
     agent.set_current_robot(tello.robot_name)
+
+    # Voice input/output node
+    voice_io = VoiceInOut()
+    # voice_io.get_logger().set_level(rclpy.logging.LoggingSeverity.DEBUG)
 
     # Use executor in a separate thread
     executor = MultiThreadedExecutor()
@@ -326,6 +335,9 @@ def main(args=None):
     executor.add_node(tello)
     executor.add_node(spot)
 
+    # Spin also the voice input/output node
+    executor.add_node(voice_io)
+
     # Start the ROS spinning in a background thread
     spin_thread = threading.Thread(target=executor.spin)
     spin_thread.start()
@@ -334,6 +346,9 @@ def main(args=None):
     executor.shutdown()
 
     agent.destroy_node()
+    spot.destroy_node()
+    tello.destroy_node()
+    voice_io.destroy_node()
     rclpy.shutdown()
 
 

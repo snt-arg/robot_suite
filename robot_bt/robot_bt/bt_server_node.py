@@ -4,7 +4,9 @@ import py_trees
 from py_trees.trees import BehaviourTree
 from py_trees.blackboard import Client
 from rclpy import Optional
-from rclpy.logging import rclpy
+
+import rclpy
+from rclpy.logging import get_logger
 from rclpy.node import Node
 from robot_bt.bootstrap import bootstrap_bt
 

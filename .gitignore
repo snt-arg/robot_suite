@@ -5,21 +5,7 @@
 build/
 install/
 log/
-drivers/
 
-# Other folders and files
-
-node_modules/
-.vscode/
-rosbridge_suite/
-spot_ros2/
-suitenv/
-toignore/
-.github/
-docker/
-.dockerignore
-rosbag2*
-Logslogs
 
 
 # temporarily
@@ -27,14 +13,8 @@ robot_station/
 docs/
 mkdocs.yml
 
-
-
-.gitignore
 interaction_log.txt
 
-
-# Keys
-aerolabkey
 
 # ML models
 *.pt
@@ -249,5 +229,17 @@ AMENT_IGNORE
 
 # LLM
 interaction*.txt
+
+# Other folders and files
+node_modules/
+drivers/
+.vscode/
+rosbridge_suite/
+spot_ros2/
+suitenv/
+toignore/
+docker/
+rosbag2*
+Logslogs
 
 # End of https://www.toptal.com/developers/gitignore/api/ros2,python

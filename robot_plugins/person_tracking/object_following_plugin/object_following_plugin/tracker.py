@@ -342,7 +342,7 @@ class Tracker(PluginNode):
                 self.midpoint_queue.append(self.pilot_box)
                 self.no_update_count = 0
                 self.get_logger().info(
-                    f"\Based on overlap, Started tracking {self.pilot_box}\n"
+                    f"\nBased on overlap, Started tracking {self.pilot_box}\n"
                 )
         else:
             self.get_logger().debug(

@@ -1,10 +1,11 @@
+import rclpy
 import json
 from typing import Dict
 import py_trees
 from robot_interfaces.srv import PluginInterface
 from rclpy.node import Node
 from rclpy.client import Client
-from rclpy.logging import rclpy
+from rclpy.logging import get_logger
 
 STATUS_MAP = ["FAILURE", "RUNNING", "SUCCESS"]
 
