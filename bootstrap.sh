@@ -135,6 +135,20 @@ function common_install(){
         rosdep update
     fi
 
+    # Check if Python venv module is available
+    if python3 -m venv --help >/dev/null 2>&1; then
+        python3 -m venv suitenv
+    else
+        print_warning "Python venv module is not installed.  Installing it... "
+        sudo apt update && sudo apt install -y python3-venv
+    fi
+
+    touch ./suitenv/COLCON_IGNORE
+
+    source suitenv/bin/activate
+    export PYTHONPATH=$(echo $VIRTUAL_ENV/lib/python*/site-packages):$PYTHONPATH
+    echo "export PYTHONPATH=$(echo $VIRTUAL_ENV/lib/python*/site-packages):$PYTHONPATH" >> ~/.bashrc
+
     print_info "Installing dependencies for ROS packages"
     rosdep install --from-paths . -y
 
@@ -250,9 +264,9 @@ function spot_install(){
 
 case "$1" in
     tello)
-        tello_install
         common_install
-
+        tello_install
+        
         print_info "Building suite"
         colcon build --symlink-install
         ;;

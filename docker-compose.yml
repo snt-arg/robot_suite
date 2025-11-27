@@ -25,7 +25,6 @@ services:
             #- RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
         volumes:
             - /tmp/.X11-unix:/tmp/.X11-unix
-            #- /home/aerolabws2/workspaces/robot_suite_ingrid/spot_sdk_install:/spot_sdk_install:ro
         network_mode: "host"
         tty: true
         stdin_open: true
