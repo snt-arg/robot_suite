@@ -234,6 +234,4 @@ AMENT_IGNORE
 interaction*.txt
 Logslogs
 
-toignore/
-
 # End of https://www.toptal.com/developers/gitignore/api/ros2,python
