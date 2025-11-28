@@ -17,7 +17,8 @@ RUN apt update && \
     ros-$ROS_DISTRO-rosidl-default-runtime ros-$ROS_DISTRO-ament-cmake-mypy \
     ros-$ROS_DISTRO-builtin-interfaces ros-$ROS_DISTRO-rclcpp ros-$ROS_DISTRO-teleop-twist-keyboard\
     ros-$ROS_DISTRO-rclpy ros-$ROS_DISTRO-rosidl-adapter ros-$ROS_DISTRO-bondcpp-dbgsym  \
-    ros-$ROS_DISTRO-rosidl-default-generators ros-$ROS_DISTRO-std-msgs &&\
+    ros-$ROS_DISTRO-rosidl-default-generators ros-$ROS_DISTRO-std-msgs \
+    portaudio19-dev  python3-dev &&\
     rm -rf /var/lib/apt/lists/*
 
 

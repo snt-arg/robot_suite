@@ -8,7 +8,8 @@ RUN apt update && \
     apt install --no-install-recommends -y \
     ssh vim python3-pip python3-venv python3-vcstool wget git iputils-ping \
     ros-$ROS_DISTRO-cv-bridge ros-$ROS_DISTRO-rmw-cyclonedds-cpp \
-    ros-$ROS_DISTRO-image-transport 
+    ros-$ROS_DISTRO-image-transport \
+    portaudio19-dev  python3-dev 
 
 # Copy Robot Suite
 COPY . /workspace/robot_suite

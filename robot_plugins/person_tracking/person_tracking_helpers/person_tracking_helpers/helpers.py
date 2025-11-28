@@ -118,7 +118,7 @@ def construct_JSON_string(persons_list, possessor_to_objects_dict):
 def extract_box_msg(box_msg):
     """Given a Box message (defined in person_tracking_msgs),
     this function returns a tuple (top_left_x, top_left_y, bottom_right_x, bottom_right_y)
-    This function also works for any object possessing top_left.x, top_left.y, bottom_right.x , bott
+    This function also works for any object possessing top_left.x, top_left.y, bottom_right.x , bottom_right.y attributes
     """
 
     top_left_x = box_msg.top_left.x
