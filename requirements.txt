@@ -15,13 +15,19 @@ loguru==0.7.3
 openai==1.93.0
 opencv-python==4.10.0.84
 setuptools<80
-py-trees
 
-empy
-lark
+empy==3.3.4
+lark==1.1.9
 catkin_pkg
-PySide2
-PyQt5
+PySide2==5.15.2.1
+PyQt5==5.15.11
+
+coverage==7.6.1
+soundfile==0.13.1
+PyAudio==0.2.14
+openai-whisper==20250625
+SpeechRecognition==3.14.4
+piper-tts==1.3.0
 
 
 
