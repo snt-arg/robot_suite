@@ -141,6 +141,7 @@ function common_install(){
     else
         print_warning "Python venv module is not installed.  Installing it... "
         sudo apt update && sudo apt install -y python3-venv
+        python3 -m venv suitenv
     fi
 
     touch ./suitenv/COLCON_IGNORE

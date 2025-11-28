@@ -5,7 +5,10 @@
 build/
 install/
 logs/
+log/
 drivers/
+spot_ros2/
+rosbridge_suite/
 
 # ML models
 *.pt
@@ -13,12 +16,18 @@ nanodet-plus-m-1.5x_416_checkpoint.ckpt
 nanodet_m.ckpt
 altitude_checker.py
 
+#temporary 
+robot_station/
+
+
+
 
 ### Python ###
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
+suitenv/
 
 # C extensions
 *.so
@@ -219,5 +228,8 @@ AMENT_IGNORE
 
 # LLM
 interaction*.txt
+Logslogs
+
+toignore/
 
 # End of https://www.toptal.com/developers/gitignore/api/ros2,python
