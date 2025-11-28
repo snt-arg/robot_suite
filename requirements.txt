@@ -19,8 +19,8 @@ setuptools<80
 empy==3.3.4
 lark==1.1.9
 catkin_pkg
-PySide2==5.15.2.1
-PyQt5==5.15.11
+PySide2 #==5.15.2.1
+PyQt5 #==5.15.11
 
 coverage==7.6.1
 soundfile==0.13.1

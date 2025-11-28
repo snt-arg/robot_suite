@@ -9,7 +9,8 @@ RUN apt update && \
     ssh vim python3-pip python3-venv python3-vcstool wget git iputils-ping \
     ros-$ROS_DISTRO-cv-bridge ros-$ROS_DISTRO-rmw-cyclonedds-cpp \
     ros-$ROS_DISTRO-image-transport \
-    portaudio19-dev  python3-dev build-essential
+    portaudio19-dev  python3-dev build-essential \
+    alsa-base alsa-utils
 
 # Copy Robot Suite
 COPY . /workspace/robot_suite
