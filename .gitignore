@@ -19,7 +19,8 @@ altitude_checker.py
 
 #temporary 
 robot_station/
-
+robot_station_fromlegacy/
+tello_control_station/
 
 
 

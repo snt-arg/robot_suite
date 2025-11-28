@@ -1,5 +1,5 @@
-import json
 import rclpy
+import json
 from typing import Dict
 import py_trees
 from robot_interfaces.srv import PluginInterface
@@ -47,9 +47,6 @@ class PluginClient(py_trees.behaviour.Behaviour):
         request.blackboard = self._serialize_blackboard()
 
         future = self.client.call_async(request)
-        ## test
-        # print(f"\n!!!!!! Sending a request for {self.plugin_name}. The response was {future}\n")
-        # end
         rclpy.spin_until_future_complete(self.node, future)
 
         return future.result()
@@ -78,7 +75,6 @@ class PluginClient(py_trees.behaviour.Behaviour):
         return encoded_blackboard
 
     def _deserialize_blackboard(self, encoded_blackboard: str) -> None:
-        print(encoded_blackboard)
         blackboard = json.loads(encoded_blackboard)
         # TODO: Make a union of received blackboard with current blackboard
 

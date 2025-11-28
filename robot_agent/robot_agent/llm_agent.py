@@ -25,7 +25,6 @@ import logging
 from robot_agent.spot_controller import SpotController
 from robot_agent.tello_controller import TelloController
 
-# from robot_agent.voice_input_output import VoiceInOut
 from robot_agent.voice_input_output import VoiceInOut
 
 

@@ -87,7 +87,9 @@ class DefaultBT(py_trees.composites.Sequence):
                             "HandGesturesPlugin", "landmark_detector_node", self.node
                         ),
                         GesturesInterpreterAction(
-                            "GesturesInterpreterAction", self.node
+                            "GesturesInterpreterAction",
+                            self.node,
+                            False,
                         ),
                     ],
                 )

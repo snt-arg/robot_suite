@@ -26,17 +26,20 @@ from robot_bt.behaviours.tello.actions import (
     LandAction,
     RemoteOperator,
     GesturesInterpreterAction,
-    
 )
 from robot_bt.behaviours.tello.actions.rotate_tello import RotateTello
 from robot_bt.behaviours.shared.actions import PluginClient
 from robot_bt.behaviours.shared.conditions import CanRunPlugin, IsBatteryLow
-from robot_bt.behaviours.shared.conditions.is_tracking_mode_correct import IsTrackingModeCorrect
-from robot_bt.behaviours.shared.conditions.is_rotation_complete import IsRotationComplete
+from robot_bt.behaviours.shared.conditions.is_tracking_mode_correct import (
+    IsTrackingModeCorrect,
+)
+from robot_bt.behaviours.shared.conditions.is_rotation_complete import (
+    IsRotationComplete,
+)
 from robot_bt.behaviours.tello.conditions import IsDroneConnected
 
 
-class PersonTrackingBT(py_trees.composites.Sequence):
+class TelloBT(py_trees.composites.Sequence):
     def __init__(
         self,
         node: Node,
@@ -55,8 +58,11 @@ class PersonTrackingBT(py_trees.composites.Sequence):
             "tracking_mode", access=py_trees.common.Access.WRITE
         )
 
-        self.plugins_blackboard.selected_plugin = "person_tracking"
-        self.plugins_blackboard.tracking_mode = "hand" # or "llm" 
+        self.plugins_blackboard.selected_plugin = (
+            "person_tracking"  # or "landmark_detector_node"
+        )
+
+        self.plugins_blackboard.tracking_mode = "hand"  # or "llm"
 
     def build_tree(self):
         drone_connection = py_trees.composites.Selector(
@@ -94,22 +100,28 @@ class PersonTrackingBT(py_trees.composites.Sequence):
                         PluginClient(
                             "HandGesturesPlugin", "landmark_detector_node", self.node
                         ),
-                        GesturesInterpreterAction(
-                            "GesturesInterpreterAction", self.node
+                        py_trees.composites.Selector(
+                            "GesturesInterpreterControl",
+                            memory=False,
+                            children=[
+                                GesturesInterpreterAction(
+                                    "GesturesInterpreterAction",
+                                    self.node,
+                                    False,
+                                ),
+                                py_trees.behaviours.Success("SuccessDummy"),
+                            ],
                         ),
                     ],
                 ),
-
-
-
                 ## Person Tracking Plugin
                 py_trees.composites.Sequence(
                     "PersonTrackingControl",
                     memory=False,
                     children=[
-                        CanRunPlugin("CanRunPersonTracking","person_tracking"),
+                        CanRunPlugin("CanRunPersonTracking", "person_tracking"),
                         PluginClient(
-                            "ObjectDetectorPlugin", "object_detector_node", self.node
+                            "ObjectDetectorPlugin", "object_detection_node", self.node
                         ),
                         py_trees.composites.Selector(
                             "CorrectModeControl",
@@ -119,17 +131,48 @@ class PersonTrackingBT(py_trees.composites.Sequence):
                                     "LLMMode",
                                     memory=False,
                                     children=[
-                                        IsTrackingModeCorrect("CheckLLMMode","person_object_association_node"),
-                                        PluginClient("PersonObjectAssociatorPlugin", "person_object_association_node", self.node),
+                                        IsTrackingModeCorrect(
+                                            "CheckLLMMode",
+                                            "associator_node",
+                                        ),
+                                        PluginClient(
+                                            "PersonObjectAssociatorPlugin",
+                                            "associator_node",
+                                            self.node,
+                                        ),
                                     ],
                                 ),
                                 py_trees.composites.Sequence(
                                     "HandMode",
                                     memory=False,
                                     children=[
-                                        IsTrackingModeCorrect("CheckHandMode","landmark_detector_node"),
-                                        PluginClient("HandGesturesPlugin", "landmark_detector_node", self.node), 
-                                        PluginClient("SignFilterPlugin", "sign_filter_node", self.node),
+                                        IsTrackingModeCorrect(
+                                            "CheckHandMode", "landmark_detector_node"
+                                        ),
+                                        PluginClient(
+                                            "HandGesturesPlugin",
+                                            "landmark_detector_node",
+                                            self.node,
+                                        ),
+                                        PluginClient(
+                                            "SignFilterPlugin",
+                                            "sign_filter_node",
+                                            self.node,
+                                        ),
+                                        py_trees.composites.Selector(
+                                            "GesturesInterpreterControlTracking",
+                                            memory=False,
+                                            children=[
+                                                GesturesInterpreterAction(
+                                                    "GesturesInterpreterTargetOnly",
+                                                    self.node,
+                                                    True,
+                                                ),
+                                                py_trees.behaviours.Success(
+                                                    "SuccessDummy2"
+                                                ),
+                                            ],
+                                        ),
                                     ],
                                 ),
                             ],
@@ -142,41 +185,45 @@ class PersonTrackingBT(py_trees.composites.Sequence):
                                     "FollowingControl",
                                     memory=False,
                                     children=[
-                                        PluginClient("TrackerPlugin", "pilot_person_tracker_node", self.node),
-                                        PluginClient("CommandsPlugin", "following_commands_node", self.node),
-                                        #PluginClient("CollisionAvoidancePlugin","collision_avoidance_node",self.node),
+                                        PluginClient(
+                                            "TrackerPlugin",
+                                            "tracker_node",
+                                            self.node,
+                                        ),
+                                        PluginClient(
+                                            "CommandsPlugin",
+                                            "following_commands_node",
+                                            self.node,
+                                        ),
                                     ],
                                 ),
-                                
                                 py_trees.composites.Sequence(
-                                "RotationControl",
-                                memory=False,
-                                children=[
-                                    IsRotationComplete("IsRotationComplete",RotateTello("dummy",self.node)),
-                                    LandAction("LandPersonLost",self.node),
+                                    "RotationControl",
+                                    memory=False,
+                                    children=[
+                                        IsRotationComplete(
+                                            "IsRotationComplete",
+                                            RotateTello("dummy", self.node),
+                                        ),
+                                        LandAction("LandPersonLost", self.node),
                                     ],
                                 ),
-                            RotateTello("RotateTello",self.node),
-                            
-
+                                RotateTello("RotateTello", self.node),
                             ],
                         ),
                     ],
                 ),
-                
                 ## end Person Tracking Plugin
-
             ],
         )
 
         self.add_children([drone_connection, battery_checker, remote_operator, plugins])
-        #self.add_children([drone_connection, battery_checker, remote_operator])
 
-        #test
-        #self.add_children([remote_operator, plugins])
-        #test
+        # test
+        # self.add_children([remote_operator, plugins])
+        # self.add_children([drone_connection, battery_checker, remote_operator])
+        # test
 
 
 def bootstrap(ros_node: Node) -> py_trees.behaviour.Behaviour:
-    return PersonTrackingBT(ros_node)
-
+    return TelloBT(ros_node)
