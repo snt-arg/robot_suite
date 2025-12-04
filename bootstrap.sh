@@ -80,7 +80,12 @@ ask_user_input(){
 install_tellopy() {
     git clone https://github.com/hanyazou/TelloPy.git tellopy
     cd tellopy
-    pip install .
+    
+    if ["$IN_DOCKER"="1"]; then
+        pip install . --break-system-packages
+    else
+        pip install .
+    
 
     cd ..
     sudo rm -rf tellopy
@@ -126,10 +131,15 @@ function common_install(){
     # Check if rosdep is installed
     if [ "$(command -v rosdep)" == "" ]; then
         print_warning "rosdep is not installed. Installing it..."
+        
+        if ["$IN_DOCKER"="1"]; then
+            pip install rosdep --break-system-packages
+        else
+            pip install rosdep
 
-        pip install rosdep
         sudo rosdep init
         rosdep update
+
     else
         print_info "rosdep is already installed. Updating it..."
         rosdep update
@@ -153,8 +163,12 @@ function common_install(){
     print_info "Installing dependencies for ROS packages"
     rosdep install --from-paths . -y
 
+
     print_info "Installing dependencies for the project"
-    pip install -r requirements.txt
+    if ["$IN_DOCKER"="1"]; then
+        pip install -r requirements.txt --break-system-packages
+    else
+        pip install -r requirements.txt
 }
 
 function tello_install(){

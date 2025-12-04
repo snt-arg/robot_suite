@@ -22,9 +22,11 @@ RUN apt update && \
 # Copy Robot Suite
 COPY . /workspace/src/robot_suite
 
+ARG IN_DOCKER=1
+ENV IN_DOCKER=$IN_DOCKER
 WORKDIR /workspace/src/robot_suite
 SHELL ["/bin/bash", "-c"]
-RUN ./bootstrap_docker.sh spot
+RUN ./bootstrap.sh spot
 
 RUN echo "source /opt/ros/jazzy/setup.bash" >> ~/.bashrc
 RUN echo "source /workspace/install/setup.bash" >> ~/.bashrc
