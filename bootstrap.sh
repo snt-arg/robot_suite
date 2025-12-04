@@ -142,6 +142,7 @@ function common_install(){
         sudo rosdep init
         rosdep update
 
+
     else
         print_info "rosdep is already installed. Updating it..."
         rosdep update
@@ -164,6 +165,7 @@ function common_install(){
 
     print_info "Installing dependencies for ROS packages"
     rosdep install --from-paths . -y
+
 
 
     print_info "Installing dependencies for the project"
