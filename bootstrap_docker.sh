@@ -80,7 +80,7 @@ ask_user_input(){
 install_tellopy() {
     git clone https://github.com/hanyazou/TelloPy.git tellopy
     cd tellopy
-    pip install .
+    pip install . --break-system-packages
 
     cd ..
     sudo rm -rf tellopy
@@ -127,7 +127,7 @@ function common_install(){
     if [ "$(command -v rosdep)" == "" ]; then
         print_warning "rosdep is not installed. Installing it..."
 
-        pip install rosdep
+        pip install rosdep --break-system-packages
         sudo rosdep init
         rosdep update
     else
