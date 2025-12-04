@@ -22,7 +22,7 @@ import threading
 from colorama import Fore, Style, init
 import logging
 
-from robot_agent.spot_controller import SpotController
+#from robot_agent.spot_controller import SpotController
 from robot_agent.tello_controller import TelloController
 
 from robot_agent.voice_input_output import VoiceInOut
@@ -314,11 +314,11 @@ def main(args=None):
     rclpy.init(args=args)
 
     # Robot setting up
-    spot = SpotController("spot")
+    #spot = SpotController("spot")
     tello = TelloController("tello")
 
     agent = Agent(tello, tello.robot_name)
-    agent.add_robot(spot, spot.robot_name)
+    #agent.add_robot(spot, spot.robot_name)
 
     agent.set_current_robot(tello.robot_name)
 
@@ -332,7 +332,7 @@ def main(args=None):
 
     # Spin also the spot and tello controllers.
     executor.add_node(tello)
-    executor.add_node(spot)
+    #executor.add_node(spot)
 
     # Spin also the voice input/output node
     executor.add_node(voice_io)
@@ -345,7 +345,7 @@ def main(args=None):
     executor.shutdown()
 
     agent.destroy_node()
-    spot.destroy_node()
+    #spot.destroy_node()
     tello.destroy_node()
     voice_io.destroy_node()
     rclpy.shutdown()

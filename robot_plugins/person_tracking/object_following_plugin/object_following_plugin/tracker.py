@@ -631,7 +631,7 @@ def main(args=None):
     tracker = Tracker("tracker_node")
 
     # uncomment to see debug logs
-    tracker.get_logger().set_level(rclpy.logging.LoggingSeverity.DEBUG)
+    # tracker.get_logger().set_level(rclpy.logging.LoggingSeverity.DEBUG)
 
     # Execute the callback function until the global executor is shutdown
     rclpy.spin(tracker)
