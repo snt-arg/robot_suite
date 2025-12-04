@@ -135,26 +135,11 @@ function common_install(){
         rosdep update
     fi
 
-    # Check if Python venv module is available
-    # if python3 -m venv --help >/dev/null 2>&1; then
-    #     python3 -m venv suitenv
-    # else
-    #     print_warning "Python venv module is not installed.  Installing it... "
-    #     sudo apt update && sudo apt install -y python3-venv
-    #     python3 -m venv suitenv
-    # fi
-
-    # touch ./suitenv/COLCON_IGNORE
-
-    # source suitenv/bin/activate
-    # export PYTHONPATH=$(echo $VIRTUAL_ENV/lib/python*/site-packages):$PYTHONPATH
-    # echo "export PYTHONPATH=$(echo $VIRTUAL_ENV/lib/python*/site-packages):$PYTHONPATH" >> ~/.bashrc
-
     print_info "Installing dependencies for ROS packages"
     rosdep install --from-paths . -y
 
     print_info "Installing dependencies for the project"
-    pip install -r requirements.txt
+    pip install -r requirements.txt --break-system-packages
 }
 
 function tello_install(){
@@ -168,7 +153,7 @@ function tello_install(){
 function spot_install(){
     print_info "Installing Spot driver 2"
     
-    pip3 install --no-cache-dir -r ./requirements.txt  --ignore-installed
+    pip3 install --no-cache-dir -r ./requirements.txt --break-system-packages --ignore-installed
     
     mkdir -p drivers
     cd drivers

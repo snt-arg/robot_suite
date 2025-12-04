@@ -28,7 +28,7 @@ COPY . /workspace/src/robot_suite
 
 WORKDIR /workspace/src/robot_suite
 SHELL ["/bin/bash", "-c"]
-RUN ./bootstrap.sh spot
+RUN ./bootstrap_docker.sh spot
 
 RUN echo "source /opt/ros/jazzy/setup.bash" >> ~/.bashrc
 RUN echo "source /workspace/install/setup.bash" >> ~/.bashrc
