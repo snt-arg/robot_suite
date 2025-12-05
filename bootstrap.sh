@@ -119,6 +119,59 @@ if [ "$(command -v pip)" == "" ]; then
     fi
 fi
 
+# downloading piper models
+download_piper_models() {
+    local MODEL_DIR="/workspace/robot_suite/robot_agent/robot_agent/models"
+
+    # Voice-specific info (directory + list of files)
+    local FEMALE_DIR="$MODEL_DIR/female"
+    local FEMALE_URL="https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/amy/medium"
+    local FEMALE_FILES=(
+        "en_US-amy-medium.onnx"
+        "en_US-amy-medium.onnx.json"
+    )
+
+    local MALE_DIR="$MODEL_DIR/male"
+    local MALE_URL="https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/kusal/medium"
+    local MALE_FILES=(
+        "en_US-kusal-medium.onnx"
+        "en_US-kusal-medium.onnx.json"
+    )
+
+
+    download_voice() {
+        local dest_dir="$1"
+        local base_url="$2"
+        shift 2
+        local files=("$@")
+
+        mkdir -p "$dest_dir"
+
+        for file in "${files[@]}"; do
+            local url="$base_url/$file"
+            local out="$dest_dir/$file"
+
+            if [[ ! -f "$out" ]]; then
+                echo "→ Downloading $file..."
+                wget -q --show-progress "$url" -O "$out"
+                if [[ $? -ne 0 ]]; then
+                    print_error "Failed to download $file from $url. Download the file manually at $url. "
+                fi
+            else
+                print_warning "$file already exists, skipping"
+            fi
+        done
+    }
+    
+    print_info "Downloading Piper TTS models..."
+
+    download_voice "$FEMALE_DIR" "$FEMALE_URL" "${FEMALE_FILES[@]}"
+
+    download_voice "$MALE_DIR" "$MALE_URL" "${MALE_FILES[@]}"
+
+}
+
+
 
 function common_install(){
     # Ensure this script is run as root
@@ -141,32 +194,13 @@ function common_install(){
 
         sudo rosdep init
         rosdep update
-
-
     else
         print_info "rosdep is already installed. Updating it..."
         rosdep update
     fi
 
-    # Check if Python venv module is available
-    # if python3 -m venv --help >/dev/null 2>&1; then
-    #     python3 -m venv suitenv
-    # else
-    #     print_warning "Python venv module is not installed.  Installing it... "
-    #     sudo apt update && sudo apt install -y python3-venv
-    #     python3 -m venv suitenv
-    # fi
-
-    # touch ./suitenv/COLCON_IGNORE
-
-    # source suitenv/bin/activate
-    # export PYTHONPATH=$(echo $VIRTUAL_ENV/lib/python*/site-packages):$PYTHONPATH
-    # echo "export PYTHONPATH=$(echo $VIRTUAL_ENV/lib/python*/site-packages):$PYTHONPATH" >> ~/.bashrc
-
     print_info "Installing dependencies for ROS packages"
     rosdep install --from-paths . -y
-
-
 
     print_info "Installing dependencies for the project"
     if [ "$IN_DOCKER" = "1" ]; then
@@ -174,6 +208,8 @@ function common_install(){
     else
         pip install -r requirements.txt
     fi
+
+    download_piper_models
 }
 
 function tello_install(){
