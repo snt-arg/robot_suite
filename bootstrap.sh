@@ -81,7 +81,7 @@ install_tellopy() {
     git clone https://github.com/hanyazou/TelloPy.git tellopy
     cd tellopy
 
-    if ["$IN_DOCKER"="1"]; then
+    if [ "$IN_DOCKER" = "1" ]; then
         pip install . --break-system-packages
     else
         pip install .
@@ -133,7 +133,7 @@ function common_install(){
     if [ "$(command -v rosdep)" == "" ]; then
         print_warning "rosdep is not installed. Installing it..."
         
-        if ["$IN_DOCKER"="1"]; then
+        if [ "$IN_DOCKER" = "1" ]; then
             pip install rosdep --break-system-packages
         else
             pip install rosdep
@@ -169,7 +169,7 @@ function common_install(){
 
 
     print_info "Installing dependencies for the project"
-    if ["$IN_DOCKER"="1"]; then
+    if [ "$IN_DOCKER" = "1" ]; then
         pip install -r requirements.txt --break-system-packages
     else
         pip install -r requirements.txt
@@ -187,7 +187,11 @@ function tello_install(){
 function spot_install(){
     print_info "Installing Spot driver 2"
     
-    pip3 install --no-cache-dir -r ./requirements.txt  --ignore-installed
+    if [ "$IN_DOCKER" = "1" ]; then
+        pip3 install --no-cache-dir -r ./requirements.txt  --ignore-installed --break-system-packages
+    else
+        pip3 install --no-cache-dir -r ./requirements.txt  --ignore-installed
+    fi
     
     mkdir -p drivers
     cd drivers
@@ -292,8 +296,9 @@ case "$1" in
         colcon build --symlink-install
         ;;
     spot)
-        spot_install
         common_install
+        spot_install
+        
 
         print_info "Building suite"
         colcon build --symlink-install
