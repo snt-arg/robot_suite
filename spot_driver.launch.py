@@ -1,10 +1,20 @@
 import os
 
 from launch import LaunchContext, LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, OpaqueFunction
+from launch.actions import (
+    DeclareLaunchArgument,
+    IncludeLaunchDescription,
+    OpaqueFunction,
+)
 from launch.conditions import IfCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.substitutions import Command, FindExecutable, LaunchConfiguration, PathJoinSubstitution, TextSubstitution
+from launch.substitutions import (
+    Command,
+    FindExecutable,
+    LaunchConfiguration,
+    PathJoinSubstitution,
+    TextSubstitution,
+)
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 from synchros2.launch.actions import DeclareBooleanLaunchArgument, convert_to_bool
@@ -26,29 +36,43 @@ def launch_setup(context: LaunchContext, ld: LaunchDescription) -> None:
     spot_name_arg = LaunchConfiguration("spot_name")
     tf_prefix_arg = LaunchConfiguration("tf_prefix")
     rviz_config_file = LaunchConfiguration("rviz_config_file").perform(context)
-    mock_enable = IfCondition(LaunchConfiguration("mock_enable", default="False")).evaluate(context)
-    robot_description_package = LaunchConfiguration("robot_description_package").perform(context)
-    controllable = convert_to_bool("controllable", LaunchConfiguration("controllable").perform(context))
+    mock_enable = IfCondition(
+        LaunchConfiguration("mock_enable", default="False")
+    ).evaluate(context)
+    robot_description_package = LaunchConfiguration(
+        "robot_description_package"
+    ).perform(context)
+    controllable = convert_to_bool(
+        "controllable", LaunchConfiguration("controllable").perform(context)
+    )
 
     # if config_file has been set (and is not the default empty string) and is also not a file, do not launch anything.
     config_file_path = config_file.perform(context)
     if (config_file_path != "") and (not os.path.isfile(config_file_path)):
-        raise FileNotFoundError("Configuration file '{}' does not exist!".format(config_file_path))
+        raise FileNotFoundError(
+            "Configuration file '{}' does not exist!".format(config_file_path)
+        )
 
     substitutions = {
         "spot_name": spot_name_arg,
         "frame_prefix": tf_prefix_arg,
     }
-    configured_params = substitute_launch_parameters(config_file_path, substitutions, context)
+    configured_params = substitute_launch_parameters(
+        config_file_path, substitutions, context
+    )
     spot_name, tf_prefix = get_name_and_prefix(configured_params)
 
     if mock_enable:
-        mock_has_arm = IfCondition(LaunchConfiguration("mock_has_arm")).evaluate(context)
+        mock_has_arm = IfCondition(LaunchConfiguration("mock_has_arm")).evaluate(
+            context
+        )
         has_arm = mock_has_arm
     else:
         has_arm = spot_has_arm(config_file_path=config_file.perform(context))
 
-    robot_description_pkg_share = FindPackageShare(robot_description_package).find(robot_description_package)
+    robot_description_pkg_share = FindPackageShare(robot_description_package).find(
+        robot_description_package
+    )
 
     spot_driver_params = {
         "mock_enable": mock_enable,
@@ -111,7 +135,9 @@ def launch_setup(context: LaunchContext, ld: LaunchDescription) -> None:
         [
             PathJoinSubstitution([FindExecutable(name="xacro")]),
             " ",
-            PathJoinSubstitution([robot_description_pkg_share, "urdf", "spot.urdf.xacro"]),
+            PathJoinSubstitution(
+                [robot_description_pkg_share, "urdf", "spot.urdf.xacro"]
+            ),
             " ",
             "arm:=",
             TextSubstitution(text=str(has_arm).lower()),
@@ -122,7 +148,10 @@ def launch_setup(context: LaunchContext, ld: LaunchDescription) -> None:
     )
     # Publish frequency of the robot state publisher defaults to 20 Hz, resulting in slow TF lookups.
     # By ignoring the timestamp, we publish a TF update in this node every time there is a joint state update (50 Hz).
-    robot_description_params = {"robot_description": robot_description, "ignore_timestamp": True}
+    robot_description_params = {
+        "robot_description": robot_description,
+        "ignore_timestamp": True,
+    }
     robot_state_publisher = Node(
         package="robot_state_publisher",
         executable="robot_state_publisher",
@@ -152,7 +181,9 @@ def launch_setup(context: LaunchContext, ld: LaunchDescription) -> None:
 
     rviz = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
-            PathJoinSubstitution([FindPackageShare(THIS_PACKAGE), "launch", "rviz.launch.py"])
+            PathJoinSubstitution(
+                [FindPackageShare(THIS_PACKAGE), "launch", "rviz.launch.py"]
+            )
         ),
         launch_arguments={
             "spot_name": spot_name,
@@ -165,10 +196,17 @@ def launch_setup(context: LaunchContext, ld: LaunchDescription) -> None:
 
     spot_image_publishers = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
-            PathJoinSubstitution([FindPackageShare(THIS_PACKAGE), "launch", "spot_image_publishers.launch.py"])
+            PathJoinSubstitution(
+                [
+                    FindPackageShare(THIS_PACKAGE),
+                    "launch",
+                    "spot_image_publishers.launch.py",
+                ]
+            )
         ),
         launch_arguments={
-            key: LaunchConfiguration(key) for key in ["config_file", "tf_prefix", "spot_name"] + IMAGE_PUBLISHER_ARGS
+            key: LaunchConfiguration(key)
+            for key in ["config_file", "tf_prefix", "spot_name"] + IMAGE_PUBLISHER_ARGS
         }.items(),
         condition=IfCondition(LaunchConfiguration("launch_image_publishers")),
     )
@@ -176,7 +214,13 @@ def launch_setup(context: LaunchContext, ld: LaunchDescription) -> None:
 
     spot_ros2_control = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
-            PathJoinSubstitution([FindPackageShare("spot_ros2_control"), "launch", "spot_ros2_control.launch.py"])
+            PathJoinSubstitution(
+                [
+                    FindPackageShare("spot_ros2_control"),
+                    "launch",
+                    "spot_ros2_control.launch.py",
+                ]
+            )
         ),
         launch_arguments={
             "launch_rviz": LaunchConfiguration("launch_rviz"),
@@ -258,7 +302,9 @@ def generate_launch_description() -> LaunchDescription:
         )
     )
     launch_args += declare_image_publisher_args()
-    launch_args.append(DeclareLaunchArgument("spot_name", default_value="", description="Name of Spot"))
+    launch_args.append(
+        DeclareLaunchArgument("spot_name", default_value="", description="Name of Spot")
+    )
 
     ld = LaunchDescription(launch_args)
 

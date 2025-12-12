@@ -318,7 +318,6 @@ class ObjectDetector(PluginNode):
 
         self.all_detected_callback()
         self.bounding_boxes_callback()
-
         return NodeState.SUCCESS
 
 

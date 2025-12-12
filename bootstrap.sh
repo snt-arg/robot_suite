@@ -241,10 +241,11 @@ function spot_install(){
     ARCH=amd64  # or arm64
     #for url in $(cat ${ARCH}-dpkg.txt); do wget $url && sudo apt install -y ./$(basename $url); done
     
-    # Changing the generate.py file in proto2ros with another one where importlib.resources.path is not used as an os.PathLike object
-    rm /workspace/src/robot_suite/drivers/bosdyn_msgs/proto2ros/proto2ros/proto2ros/cli/generate.py
-    mv /workspace/src/robot_suite/files_for_replacing/generate.py /workspace/src/robot_suite/drivers/bosdyn_msgs/proto2ros/proto2ros/proto2ros/cli/
-    
+    # Changing the generate.py file in proto2ros with another one where importlib.resources.path is not used as an os.PathLike object 
+    #rm /workspace/src/robot_suite/drivers/bosdyn_msgs/proto2ros/proto2ros/proto2ros/cli/generate.py
+    #mv /workspace/src/robot_suite/files_for_replacing/generate.py /workspace/src/robot_suite/drivers/bosdyn_msgs/proto2ros/proto2ros/proto2ros/cli/
+
+    # EDIT: This change is no longer necessary with the current version of proto2ros, so the two lines above are commented.
     
     cd /
     
@@ -264,14 +265,14 @@ function spot_install(){
     cd ..
     
     
-    git clone https://github.com/boston-dynamics/spot-cpp-sdk.git
+    git clone https://github.com/maeri18/spot-cpp-sdk.git
     
     
     # The original signal_schema_key.h misses an import (cstdint) following new updates on C++
     # So we replace their file with a similar file, that import added
    
-    rm /spot_sdk_install/spot-cpp-sdk/cpp/bosdyn/client/data_buffer/signal_schema_key.h
-    mv /workspace/src/robot_suite/files_for_replacing/signal_schema_key.h /spot_sdk_install/spot-cpp-sdk/cpp/bosdyn/client/data_buffer
+    # rm /spot_sdk_install/spot-cpp-sdk/cpp/bosdyn/client/data_buffer/signal_schema_key.h
+    # mv /workspace/src/robot_suite/files_for_replacing/signal_schema_key.h /spot_sdk_install/spot-cpp-sdk/cpp/bosdyn/client/data_buffer
     
     cd spot-cpp-sdk/
   
@@ -286,30 +287,30 @@ function spot_install(){
     cd /workspace/src/robot_suite/drivers
     	
     # installing spot_ros2
-    git clone https://github.com/bdaiinstitute/spot_ros2.git
+    git clone https://github.com/maeri18/spot_ros2.git
     cd spot_ros2 
     git submodule init
     git submodule update
     
     # Replacing files with import errors with correct files. 
     ## Three files had an import error on cv_bridge (wrong extension, .h when it should be .hpp). 
-    rm /workspace/src/robot_suite/drivers/spot_ros2/spot_driver/src/image_stitcher/image_stitcher.cpp /workspace/src/robot_suite/drivers/spot_ros2/spot_driver/src/conversions/decompress_images.cpp /workspace/src/robot_suite/drivers/spot_ros2/spot_driver/src/api/default_image_client.cpp
+    #rm /workspace/src/robot_suite/drivers/spot_ros2/spot_driver/src/image_stitcher/image_stitcher.cpp /workspace/src/robot_suite/drivers/spot_ros2/spot_driver/src/conversions/decompress_images.cpp /workspace/src/robot_suite/drivers/spot_ros2/spot_driver/src/api/default_image_client.cpp
     
-    mv /workspace/src/robot_suite/files_for_replacing/image_stitcher.cpp /workspace/src/robot_suite/drivers/spot_ros2/spot_driver/src/image_stitcher/
+    #mv /workspace/src/robot_suite/files_for_replacing/image_stitcher.cpp /workspace/src/robot_suite/drivers/spot_ros2/spot_driver/src/image_stitcher/
     
-    mv /workspace/src/robot_suite/files_for_replacing/decompress_images.cpp /workspace/src/robot_suite/drivers/spot_ros2/spot_driver/src/conversions/
+    #mv /workspace/src/robot_suite/files_for_replacing/decompress_images.cpp /workspace/src/robot_suite/drivers/spot_ros2/spot_driver/src/conversions/
     
-    mv /workspace/src/robot_suite/files_for_replacing/default_image_client.cpp /workspace/src/robot_suite/drivers/spot_ros2/spot_driver/src/api/
+    #mv /workspace/src/robot_suite/files_for_replacing/default_image_client.cpp /workspace/src/robot_suite/drivers/spot_ros2/spot_driver/src/api/
     
     ## One file had an import that is no more necessary (#include <gmock/gmock-generated-matchers.h> when new versions of gmock do not require this)
     
-    rm /workspace/src/robot_suite/drivers/spot_ros2/spot_driver/test/include/spot_driver/matchers.hpp
+    #rm /workspace/src/robot_suite/drivers/spot_ros2/spot_driver/test/include/spot_driver/matchers.hpp
     
-    mv /workspace/src/robot_suite/files_for_replacing/matchers.hpp /workspace/src/robot_suite/drivers/spot_ros2/spot_driver/test/include/spot_driver/
+    #mv /workspace/src/robot_suite/files_for_replacing/matchers.hpp /workspace/src/robot_suite/drivers/spot_ros2/spot_driver/test/include/spot_driver/
     
     ## Replacing the spot driver launch with our custom launch file.
     rm /workspace/src/robot_suite/drivers/spot_ros2/spot_driver/launch/spot_driver.launch.py
-    mv /workspace/src/robot_suite/files_for_replacing/spot_driver.launch.py /workspace/src/robot_suite/drivers/spot_ros2/spot_driver/launch/
+    mv /workspace/src/robot_suite/spot_driver.launch.py /workspace/src/robot_suite/drivers/spot_ros2/spot_driver/launch/
     
     
     cd ../..

@@ -23,6 +23,7 @@ robot_station/
 package-lock.json
 package.json
 robot_station_fromlegacy/
+object_detection_node_prototype.py
 
 
 

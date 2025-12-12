@@ -7,6 +7,7 @@ from rosa import ROSA
 
 from langchain_community.chat_message_histories import ChatMessageHistory
 from std_msgs.msg import String
+from std_srvs.srv import Trigger
 from langchain.tools import tool
 
 import rclpy
@@ -22,7 +23,7 @@ import threading
 from colorama import Fore, Style, init
 import logging
 
-#from robot_agent.spot_controller import SpotController
+# from robot_agent.spot_controller import SpotController
 from robot_agent.tello_controller import TelloController
 
 from robot_agent.voice_input_output import VoiceInOut
@@ -57,7 +58,7 @@ class Agent(Node):
     llm_response_topic = "/llm_response"
     change_robot_topic = "/change_robot_name"
 
-    def __init__(self, robot_node: Node, robot_name: str):
+    def __init__(self, robot_node: Node, robot_name: str, voice_node: Node = None):
         super().__init__("RoboticAgent")
 
         self.llm_model = None
@@ -85,6 +86,12 @@ class Agent(Node):
         self.add_robot(robot_node, robot_name)
         # to set the current robot, make sure that the llm model was already initialized
         self.set_current_robot(robot_name)
+
+        self.voice_node = voice_node
+
+        self.stop_tts_srv = self.create_service(
+            Trigger, "/stop_tts_srv", self.stop_tts_callback
+        )
 
         self._init_parameters()
         self._init_publishers()
@@ -250,6 +257,22 @@ class Agent(Node):
         else:
             self.get_logger().info(f"Already using robot: {new_robot_name}")
 
+    def stop_tts_callback(self, request, response):
+        """Callback method to stop Piper TTS when requested via service"""
+        # Set the flag to False to stop Piper TTS
+        try:
+            if self.voice_node is not None:
+                self.voice_node.stop_tts = True
+                self.get_logger().debug("stop_tts set to True")
+                response.success = True
+                return response
+            else:
+                raise Exception("Voice node is not initialized.")
+        except Exception as e:
+            self.get_logger().error(f"An error occurred while trying to stop TTS: {e}")
+            response.success = False
+            return response
+
     ########################################## Query handling ############################################################################
     async def get_response(self, query: str):
         print(Fore.BLUE + Style.BRIGHT + f"\n👤 User: {query}\n")
@@ -313,18 +336,18 @@ class Agent(Node):
 def main(args=None):
     rclpy.init(args=args)
 
-    # Robot setting up
-    #spot = SpotController("spot")
-    tello = TelloController("tello")
-
-    agent = Agent(tello, tello.robot_name)
-    #agent.add_robot(spot, spot.robot_name)
-
-    agent.set_current_robot(tello.robot_name)
-
     # Voice input/output node
     voice_io = VoiceInOut()
     # voice_io.get_logger().set_level(rclpy.logging.LoggingSeverity.DEBUG)
+
+    # Robot setting up
+    # spot = SpotController("spot")
+    tello = TelloController("tello")
+
+    agent = Agent(tello, tello.robot_name, voice_io)
+    # agent.add_robot(spot, spot.robot_name)
+
+    agent.set_current_robot(tello.robot_name)
 
     # Use executor in a separate thread
     executor = MultiThreadedExecutor()
@@ -332,7 +355,7 @@ def main(args=None):
 
     # Spin also the spot and tello controllers.
     executor.add_node(tello)
-    #executor.add_node(spot)
+    # executor.add_node(spot)
 
     # Spin also the voice input/output node
     executor.add_node(voice_io)
@@ -345,7 +368,7 @@ def main(args=None):
     executor.shutdown()
 
     agent.destroy_node()
-    #spot.destroy_node()
+    # spot.destroy_node()
     tello.destroy_node()
     voice_io.destroy_node()
     rclpy.shutdown()
