@@ -63,7 +63,10 @@ class VoiceInOut(Node):
         )
 
         # ---> Initialize microphone for speech input
-        self.stt_mic = None
+        tmp_mic = sr.Microphone(sample_rate=22050)
+        with tmp_mic as source:
+            self.stt_recognizer.adjust_for_ambient_noise(source, duration=2)
+        self.get_logger().debug("Microphone calibrated.")
 
         self.start_listening()
 
@@ -165,8 +168,6 @@ class VoiceInOut(Node):
             f"Started listening for user query at {self.get_clock().now()}"
         )
         self.stt_mic = sr.Microphone(sample_rate=22050)
-        with self.stt_mic as source:
-            self.stt_recognizer.adjust_for_ambient_noise(source)
 
         self.stop_listening = self.stt_recognizer.listen_in_background(
             self.stt_mic, self.publish_audio_as_text
@@ -184,7 +185,7 @@ class VoiceInOut(Node):
         if self.can_listen:
             try:
                 user_query = recognizer.recognize_faster_whisper(
-                    audio_input, language="english", model="small"
+                    audio_input, language="en", model="small"
                 )
                 if user_query.strip() == "":
                     self.get_logger().debug("No speech detected.")
