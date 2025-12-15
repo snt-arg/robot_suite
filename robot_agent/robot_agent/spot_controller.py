@@ -635,8 +635,14 @@ class SpotController(Node):
 
             try:
                 msg_twist = Twist()
-                msg_twist.linear.x, msg_twist.linear.y, msg_twist.linear.z = linear
-                msg_twist.angular.z = angular
+                linear_x = float(linear[0])
+                linear_y = float(linear[1])
+                linear_z = float(linear[2])
+
+                msg_twist.linear.x = linear_x
+                msg_twist.linear.y = linear_y
+                msg_twist.linear.z = linear_z
+                msg_twist.angular.z = float(angular)
 
                 print(
                     f"DEBUG: LLM called move() with linear={linear}, angular={angular}, duration={duration}s"

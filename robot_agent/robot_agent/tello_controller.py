@@ -328,8 +328,14 @@ class TelloController(Node):
 
         try:
             msg_twist = Twist()
-            msg_twist.linear.x, msg_twist.linear.y, msg_twist.linear.z = linear
-            msg_twist.angular.z = angular
+            linear_x = float(linear[0])
+            linear_y = float(linear[1])
+            linear_z = float(linear[2])
+
+            msg_twist.linear.x = linear_x
+            msg_twist.linear.y = linear_y
+            msg_twist.linear.z = linear_z
+            msg_twist.angular.z = float(angular)
 
             # This loop correctly handles the drone's safety watchdog
             rate = 30
@@ -741,7 +747,7 @@ class TelloController(Node):
             To perform this movement the drone must be in the air (em_sky=1), at a height of at least 8 units (e.g. 8dm), and in fly_mode 6 or 31.
             The battery level must be above 20% to perform the flip maneuver.
             If in air but not in fly_mode 6 or 31, it will wait up to 10 seconds for the mode to change.
-            :param direction : A String indicating the flip direction. Valid directions: 'forward', 'backward', 'left', 'right'. Default should be 'forward', in case the user does not provide a direction.
+            :param direction : A String indicating the flip direction. Valid directions: 'forward', 'backward', 'left', 'right'. Default should be 'left', in case the user does not provide a direction.
             """
             return self.flip(direction)
 
