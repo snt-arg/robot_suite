@@ -33,7 +33,7 @@ class VoiceInOut(Node):
 
     # Audio configuration
     format = pyaudio.paInt16
-    rate = 22050
+    rate = 44100
     channels = 1
 
     voice_gender = "female"  # or male
@@ -68,6 +68,8 @@ class VoiceInOut(Node):
             self.stt_recognizer.adjust_for_ambient_noise(source, duration=2)
         self.get_logger().debug("Microphone calibrated.")
 
+        self.stt_mic = sr.Microphone(sample_rate=22050)
+
         self.start_listening()
 
         ##### INITIALIZE TEXT-TO-SPEECH ENGINE
@@ -94,6 +96,7 @@ class VoiceInOut(Node):
             normalize_audio=True,  # use raw audio from voice
         )
         self.stop_tts = False  # variable to stop TTS if needed
+        self.talking = False  # variable to indicate if currently talking
 
         # --> Start output audio stream
         self.pya = pyaudio.PyAudio()
@@ -167,8 +170,10 @@ class VoiceInOut(Node):
         self.get_logger().debug(
             f"Started listening for user query at {self.get_clock().now()}"
         )
-        self.stt_mic = sr.Microphone(sample_rate=22050)
 
+        print(
+            f"\n\n*************\n[\033[92m The stream {self.stt_mic.stream}\033[0m] \n\n"
+        )
         self.stop_listening = self.stt_recognizer.listen_in_background(
             self.stt_mic, self.publish_audio_as_text
         )
@@ -180,26 +185,36 @@ class VoiceInOut(Node):
             self.get_logger().debug(
                 f"Stopped listening for user query at {self.get_clock().now()}."
             )
+            self.stop_listening = None  # Important to set to None to close the previous context in which the mic is.
 
     def publish_audio_as_text(self, recognizer, audio_input):
         if self.can_listen:
-            try:
-                user_query = recognizer.recognize_faster_whisper(
-                    audio_input, language="en", model="small"
+            if self.talking:
+                self.get_logger().debug("Currently talking; ignoring audio input.")
+                return
+            else:
+                self.get_logger().debug(
+                    "Processing audio input for speech recognition."
                 )
-                if user_query.strip() == "":
-                    self.get_logger().debug("No speech detected.")
-                else:
-                    user_query_msg = String()
-                    user_query_msg.data = user_query
-                    self.user_query_pub.publish(user_query_msg)
-                    self.get_logger().debug(
-                        f"Published user query: {user_query_msg.data}"
+                try:
+                    user_query = recognizer.recognize_faster_whisper(
+                        audio_input, language="en", model="small"
                     )
-            except sr.UnknownValueError:
-                self.get_logger.error("Whisper could not understand audio")
-            except sr.RequestError as e:
-                self.get_logger.error(f"Could not request results from Whisper; {e}")
+                    if user_query.strip() == "":
+                        self.get_logger().debug("No speech detected.")
+                    else:
+                        user_query_msg = String()
+                        user_query_msg.data = user_query
+                        self.user_query_pub.publish(user_query_msg)
+                        self.get_logger().debug(
+                            f"Published user query: {user_query_msg.data}"
+                        )
+                except sr.UnknownValueError:
+                    self.get_logger.error("Whisper could not understand audio")
+                except sr.RequestError as e:
+                    self.get_logger.error(
+                        f"Could not request results from Whisper; {e}"
+                    )
 
     ########################################## Text-to-speech Methods ############################################################################
     def speak(self, text: str) -> None:
@@ -207,7 +222,8 @@ class VoiceInOut(Node):
         if self.can_talk:
             try:
                 self.stop_tts = False
-                self.pause_listening()
+                self.talking = True
+                # self.pause_listening()
                 self.get_logger().debug(f"Now speaking at {self.get_clock().now()}.")
 
                 for chunk in self.tts_voice.synthesize(
@@ -222,7 +238,7 @@ class VoiceInOut(Node):
                 self.get_logger().debug(
                     f"LLM response should have been spoken out loud at {self.get_clock().now()}."
                 )
-                self.start_listening()
+                # self.start_listening()
             except Exception as e:
                 self.get_logger().error(f"Error during TTS: {e}")
         else:
