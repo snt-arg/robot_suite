@@ -59,7 +59,7 @@ class VoiceInOut(Node):
         # ---> Initialize speech-to-text recognizer
         self.stt_recognizer = sr.Recognizer()
         self.stt_recognizer.pause_threshold = (
-            1.5  # seconds of non-speaking audio before a phrase is considered complete
+            0.9  # seconds of non-speaking audio before a phrase is considered complete
         )
 
         # ---> Initialize microphone for speech input
@@ -69,6 +69,12 @@ class VoiceInOut(Node):
         self.get_logger().debug("Microphone calibrated.")
 
         self.stt_mic = sr.Microphone(sample_rate=22050)
+
+        # ---> warm up the faster-whisper model
+        dummy_audio = sr.AudioData(b"\0" * 22050, 22050, 2)
+        self.stt_recognizer.recognize_faster_whisper(
+            dummy_audio, language="en", model="small"
+        )
 
         self.start_listening()
 
@@ -170,9 +176,6 @@ class VoiceInOut(Node):
             f"Started listening for user query at {self.get_clock().now()}"
         )
 
-        print(
-            f"\n\n*************\n[\033[92m The stream {self.stt_mic.stream}\033[0m] \n\n"
-        )
         self.stop_listening = self.stt_recognizer.listen_in_background(
             self.stt_mic, self.publish_audio_as_text
         )
