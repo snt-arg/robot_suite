@@ -30,6 +30,10 @@ from ultralytics import YOLO
 # for sending model to gpu if available
 import torch
 
+from threading import Thread, Lock, Event
+
+import copy
+
 
 class ObjectDetector(PluginNode):
 
@@ -58,7 +62,7 @@ class ObjectDetector(PluginNode):
     minimum_prob = 0.4
 
     # Variable to perform object detection on only some frames
-    process_interval = 1e5
+    process_interval = 5e7  # process every 0.05 scond
 
     # topic names
     image_raw_topic = "/camera/image_raw"  # raw image frames from the drone's camera
@@ -78,7 +82,8 @@ class ObjectDetector(PluginNode):
         super().__init__(name)
 
         # init model
-        self._init_model()
+        init_model_thread = Thread(target=self._init_model, daemon=True)
+        init_model_thread.start()
 
         # init topic names
         self._init_parameters()
@@ -92,9 +97,7 @@ class ObjectDetector(PluginNode):
         # ids of our classes of interest
         self.classes_needed = self.person_classes + self.objects
 
-        self.classes_ID = [
-            k for k, v in self.classes.items() if v.lower() in self.classes_needed
-        ]
+        self.classes_ID = None
 
         # to convert cv2 images to Ros Image messages and vice versa
         self.cv_bridge = CvBridge()
@@ -102,8 +105,8 @@ class ObjectDetector(PluginNode):
         # Variable to contain the frame coming directly from the drone
         self.image_raw = None
 
-        # Variable containing the time most recent time in nanoseconds when we received a raw image
-        self.last_received_time = None
+        # Variable containing the time most recent time in nanoseconds when we processed a raw image
+        self.last_processed_time = 0
 
         # Variable to hold each frame after object detection. It contains all persons detected
         self.image_all_detected = None
@@ -111,12 +114,18 @@ class ObjectDetector(PluginNode):
         # Variable containing all bounding boxes' coordinates for a single frame
         self.boxes = None
 
+        self.image_lock = Lock()
+
+        self.new_frame_event = Event()
+
+        self.detection_thread = Thread(target=self.all_detected_callback, daemon=True)
+        self.detection_thread.start()
+
     ################################ Init functions ##################################################################################
     def _init_model(self) -> None:
         """Method to initialize the object detection model based on its type and name.
         Right now, one single type is supported : 'yolo'"""
         match self.model_type.lower():
-
             case "yolo":
                 self.model = YOLO(self.model_name)
                 # using gpu is available
@@ -125,9 +134,21 @@ class ObjectDetector(PluginNode):
                 )
                 self.model.to(self.device)
                 self.classes = self.model.names
-
+                self.classes_ID = [
+                    k
+                    for k, v in self.classes.items()
+                    if v.lower() in self.classes_needed
+                ]
             case _:
                 raise Exception("Unknown model type !")
+
+        if torch.cuda.is_available():
+            self.get_logger().info("GPU detected. Using CUDA for YOLO inference.")
+        else:
+            self.get_logger().warning(
+                "No GPU detected. YOLO will run on CPU. "
+                "If you computer possesses a GPU, please install GPU PyTorch + NVIDIA packages for faster inference."
+            )
 
     def _init_parameters(self) -> None:
         """Method to initialize parameters such as ROS topics' names"""
@@ -212,19 +233,27 @@ class ObjectDetector(PluginNode):
         Then converts that image into cv2 format before performing object detection on that image and saving
         the result in self.image_all_detected"""
 
-        self.last_received_time = self.get_clock().now().nanoseconds
-
         # converting ROS Image message to cv2 image
-        self.image_raw = self.cv_bridge.imgmsg_to_cv2(img, "rgb8")
+        with self.image_lock:
+            self.image_raw = self.cv_bridge.imgmsg_to_cv2(img, "rgb8")
+        self.new_frame_event.set()
 
     def detection(self, frame) -> None:
         """Function to perform person object detection on a single frame.
         It saves the coordinates of all bounding boxes of persons detected on the frame in a variable named self.boxes
         """
+        if self.model is None:
+            self.get_logger().warning(
+                "Model not yet initialized. Cannot perform object detection."
+            )
+            return
 
         # detection of persons & objects in the frame. Only detections with a certain confidence level (minimum_prob) are  considered.
         results = self.model.track(
-            frame, persist=True, classes=self.classes_ID, conf=self.minimum_prob
+            frame,
+            persist=True,
+            classes=self.classes_ID,
+            conf=self.minimum_prob,
         )
 
         # Initializing all bounding boxes messages
@@ -260,26 +289,36 @@ class ObjectDetector(PluginNode):
         callback funtion for the publisher node (to topic /camera/image_detected).
         The image on which object detection has been performed (self.image_all_detected) is published on the topic '/all_detected'
         """
+        while rclpy.ok():
+            if self.new_frame_event.wait(timeout=0.1):
+                self.new_frame_event.clear()
 
-        # processing only a some frames to reduce computing power consumption
-        if self.last_received_time is not None and (
-            (self.get_clock().now().nanoseconds - self.last_received_time)
-            > self.process_interval
-        ):
+                # processing only a some frames to reduce computing power consumption
+                if (
+                    self.get_clock().now().nanoseconds - self.last_processed_time
+                ) > self.process_interval:
+                    with self.image_lock:
+                        frame = copy.copy(self.image_raw)
 
-            self.detection(self.image_raw)  # performing detection on the cv2 image
+                    self.detection(frame)  # performing detection on the cv2 image
+                    self.last_processed_time = self.get_clock().now().nanoseconds
 
-            try:
-                self.publisher_all_detected.publish(
-                    self.cv_bridge.cv2_to_imgmsg(self.image_all_detected, "rgb8")
-                )
-                self.get_logger().debug("Publishing a frame on all detected topic")
-            except Exception as e:
-                self.get_logger().error("An error occured, ", e)
-        else:
-            self.get_logger().debug(
-                "No raw images received yet. Cannot perform object detection"
-            )
+                    try:
+                        self.publisher_all_detected.publish(
+                            self.cv_bridge.cv2_to_imgmsg(
+                                self.image_all_detected, "rgb8"
+                            )
+                        )
+                        self.bounding_boxes_callback()
+                        self.get_logger().debug(
+                            "Publishing a frame on all detected topic"
+                        )
+                    except Exception as e:
+                        self.get_logger().error("An error occured, ", e)
+                else:
+                    self.get_logger().debug(
+                        "No raw images received yet. Cannot perform object detection"
+                    )
 
     def bounding_boxes_callback(self) -> None:
         """
@@ -315,10 +354,10 @@ class ObjectDetector(PluginNode):
         It gets called 20 times a second if state=RUNNING
         Here we call callback functions to publish a detection frame and the list of bounding boxes.
         """
-
-        self.all_detected_callback()
-        self.bounding_boxes_callback()
-        return NodeState.SUCCESS
+        if self.image_raw is None:
+            return NodeState.RUNNING
+        else:
+            return NodeState.SUCCESS
 
 
 def main(args=None):

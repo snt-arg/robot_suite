@@ -463,7 +463,7 @@ def main(args=None):
     followingCommands = FollowingCommands("following_commands_node")
 
     # uncomment to see debug logs
-    followingCommands.get_logger().set_level(rclpy.logging.LoggingSeverity.DEBUG)
+    # followingCommands.get_logger().set_level(rclpy.logging.LoggingSeverity.DEBUG)
 
     # execute the callback function until the global executor is shutdown
     rclpy.spin(followingCommands)

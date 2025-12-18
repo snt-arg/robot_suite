@@ -209,6 +209,13 @@ function common_install(){
         pip install -r requirements.txt
     fi
 
+    print_info "Downloading ultralytics for object detection"
+    if [ "$IN_DOCKER" = "1" ]; then
+        pip install --extra-index-url https://download.pytorch.org/whl/cpu torch torchvision numpy ultralytics==8.3.91 --break-system-packages
+    else
+        pip install --extra-index-url https://download.pytorch.org/whl/cpu torch torchvision numpy ultralytics==8.3.91
+    fi
+
     download_piper_models
 }
 

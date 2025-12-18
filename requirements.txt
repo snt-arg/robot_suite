@@ -5,7 +5,7 @@ py-trees==2.2.3
 pygame==2.6.1
 typing-extensions==4.12.2
 
-ultralytics==8.3.91
+#ultralytics==8.3.91
 lap
 
 jpl-rosa==1.0.8
