@@ -242,12 +242,6 @@ class ObjectDetector(PluginNode):
         """Function to perform person object detection on a single frame.
         It saves the coordinates of all bounding boxes of persons detected on the frame in a variable named self.boxes
         """
-        if self.model is None:
-            self.get_logger().warning(
-                "Model not yet initialized. Cannot perform object detection."
-            )
-            return
-
         # detection of persons & objects in the frame. Only detections with a certain confidence level (minimum_prob) are  considered.
         results = self.model.track(
             frame,
@@ -290,6 +284,11 @@ class ObjectDetector(PluginNode):
         The image on which object detection has been performed (self.image_all_detected) is published on the topic '/all_detected'
         """
         while rclpy.ok():
+            if self.model is None:
+                self.get_logger().warning(
+                    "Model not yet initialized. Cannot perform object detection."
+                )
+                return
             if self.new_frame_event.wait(timeout=0.1):
                 self.new_frame_event.clear()
 
