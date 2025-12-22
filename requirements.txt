@@ -5,7 +5,7 @@ py-trees==2.2.3
 pygame==2.6.1
 typing-extensions==4.12.2
 
-# ultralytics==8.3.91 # <-- don't needed, installed in bootstrap.sh to avoid torch from pulling nvidia packages 
+ultralytics==8.3.91 
 lap
 
 jpl-rosa==1.0.8
@@ -23,6 +23,7 @@ lark==1.1.9
 catkin_pkg
 PySide2 #==5.15.2.1
 PyQt5 #==5.15.11
+#pyyaml
 
 coverage==7.6.1
 soundfile==0.13.1

@@ -204,10 +204,10 @@ function common_install(){
 
     print_info "Installing dependencies for the project"
     if [ "$IN_DOCKER" = "1" ]; then
-        pip install --extra-index-url https://download.pytorch.org/whl/cpu torch torchvision ultralytics --break-system-packages
+        pip install --extra-index-url https://download.pytorch.org/whl/cpu torch torchvision --break-system-packages
         pip install -r requirements.txt --break-system-packages
     else
-        pip install --extra-index-url https://download.pytorch.org/whl/cpu torch torchvision ultralytics
+        pip install --extra-index-url https://download.pytorch.org/whl/cpu torch torchvision 
         pip install -r requirements.txt
     fi
 
@@ -327,9 +327,9 @@ function spot_install(){
 
 case "$1" in
     tello)
-        
-        tello_install
+    
         common_install
+        tello_install
         
         print_info "Building suite"
         colcon build --symlink-install
