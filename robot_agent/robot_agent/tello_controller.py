@@ -315,6 +315,10 @@ class TelloController(Node):
         # time stamp
         time_str = datetime.now().strftime("%H:%M:%S:%f")
         print(Fore.CYAN + f"[{time_str}] Start motion time..")
+        print(
+            Fore.MAGENTA
+            + f"DEBUG: move() called with linear={linear}, angular={angular}, duration={duration}s"
+        )
 
         # (All of your safety checks for state, height, etc. are correct and remain here)
         if not self.current_state_data:
@@ -341,10 +345,6 @@ class TelloController(Node):
             rate = 30
             sleep_interval = 1.0 / rate
             start_time = time.time()
-
-            print(
-                f"DEBUG: LLM called move() with linear={linear}, angular={angular}, duration={duration}s"
-            )
 
             while time.time() - start_time < duration:
                 self.vel_pub.publish(msg_twist)
@@ -723,9 +723,23 @@ class TelloController(Node):
             The user may specify a speed (e.g., "velocity 1m/s", "go slowly"). If a speed is provided, use it to set the magnitude of the linear velocity vector. If no speed is specified, use a default of 1 m/s or -1 m/s.
             If the user does not specify a time, assume a default duration of 1 second.
             If the drone's height is below 8 units (8dm), it cannot move down.
+            Always check the status of the drone before moving.
 
-            :param linear: A list of 3 floats representing [x, y, z] velocity in m/s. This vector should be constructed based on the user's direction and specified speed.
-                           For example, if the user says "go right at 1.2 m/s", the vector should be [0.0, -1.2, 0.0].
+            :param linear: A list of 3 floats representing [x, y, z] velocity in m/s. This vector should be constructed based on the user's direction and specified speed. \
+                           Remember the coordinate system:
+                            - x-axis: +x forward, -x backward
+                            - y-axis: +y left, -y right
+                            - z-axis: +z up, -z down
+                            Examples:
+                            - "go forward at 1.5 m/s" -> [1.5, 0.0, 0.0] (here user requested a speed of 1.5 m/s so we set the magnitude to 1.5 in the vector)
+                            - "go backward at 1 m/s" -> [-0.75, 0.0, 0.0] (here user requested a speed of 0.75 m/s so we set the magnitude to 0.75 in the vector, and note the minus because it is backward!)
+                            - "go left at 1.2 m/s" -> [0.0, 0.2, 0.0] (here user requested a speed of 0.2 m/s so we set the magnitude to 0.2 in the vector)
+                            - "go right at 1.2 m/s" -> [0.0, -1.2, 0.0] (here user requested a speed of 1.2 m/s so we set the magnitude to 1.2 in the vector, and note the minus because it is right!)
+                            - "go up at 0.5 m/s" -> [0.0, 0.0, 0.5] (here user requested a speed of 0.5 m/s so we set the magnitude to 0.5 in the vector)
+                            - "go down at 0.5 m/s" -> [0.0, 0.0, -1.5] (here user requested a speed of 1.5 m/s so we set the magnitude to 1.5 in the vector, and note the minus because it is down!)
+                            - "go forward and up at 1 m/s" -> [0.707, 0.0, 0.707] (normalize magnitude to 1)
+                            These are just examples, you have to construct the vector based on the user's request and the coordinate system explained above. Note that the user may not provide a speed, in that case use a default of 1 m/s or -1 m/s based on the direction.
+
             :param angular: A float for z-axis angular velocity (rotation).
             :param duration: Duration of the movement in seconds.
             """
@@ -733,7 +747,8 @@ class TelloController(Node):
 
         @tool
         def takeoff():
-            """Command the robot to take off and transition from ground to air. It cannot be used if the robot is already in the air or if the drone's battery is below 20%."""
+            """Command the robot to take off and transition from ground to air. It cannot be used if the robot is already in the air or if the drone's battery is below 20%.
+            Always check the status of the drone before taking off."""
             return self.takeoff()
 
         @tool
@@ -747,6 +762,7 @@ class TelloController(Node):
             To perform this movement the drone must be in the air (em_sky=1), at a height of at least 8 units (e.g. 8dm), and in fly_mode 6 or 31.
             The battery level must be above 20% to perform the flip maneuver.
             If in air but not in fly_mode 6 or 31, it will wait up to 10 seconds for the mode to change.
+            Always check the status of the drone before flipping.
             :param direction : A String indicating the flip direction. Valid directions: 'forward', 'backward', 'left', 'right'. Default should be 'left', in case the user does not provide a direction.
             """
             return self.flip(direction)
