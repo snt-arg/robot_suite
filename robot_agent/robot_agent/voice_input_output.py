@@ -70,11 +70,9 @@ class VoiceInOut(Node):
 
         self.stt_mic = sr.Microphone(sample_rate=22050)
 
-        # ---> warm up the faster-whisper model
-        dummy_audio = sr.AudioData(b"\0" * 22050, 22050, 2)
-        self.stt_recognizer.recognize_faster_whisper(
-            dummy_audio, language="en", model="small"
-        )
+        self.do_recognize_speech: callable = None
+
+        self._decide_stt_model()
 
         self.start_listening()
 
@@ -168,6 +166,41 @@ class VoiceInOut(Node):
             String, self.llm_response_topic, self.llm_response_callback, 10
         )
 
+    def _decide_stt_model(self) -> None:
+        """Method to decide which model to use based on internet connectivity.
+        If internet is available, use OpenAI Whisper API.
+        Otherwise, use local faster-whisper model.
+        """
+        dummy_audio = sr.AudioData(b"\0" * 22050, 22050, 2)
+        try:
+            # trying to access OPENAI online API with dummy audio
+            self.do_recognize_speech = (
+                lambda audio, recognizer: recognizer.recognize_openai(
+                    audio, language="en", model="whisper-1"
+                )
+            )
+            self.do_recognize_speech(dummy_audio, self.stt_recognizer)
+            self.get_logger().info(
+                "Internet connection detected! Processing with online Whisper API."
+            )
+        except Exception as e:
+            self.get_logger().info(
+                f"An exception occured when trying to access OPENAI online API {e}.\n Falling back to local faster-whisper model."
+            )
+            self.do_recognize_speech = (
+                lambda audio, recognizer: recognizer.recognize_faster_whisper(
+                    audio, language="en", model="small"
+                )
+            )
+            try:
+                # warming up the faster-whisper model
+                # This is done to reduce latency during the first recognition
+                self.do_recognize_speech(dummy_audio, self.stt_recognizer)
+            except Exception as e:
+                self.get_logger().error(
+                    f"an error occured while warming up faster-whisper model: {e}."
+                )
+
     ##########################################  Speech-to-text Methods ############################################################################
 
     def start_listening(self) -> None:
@@ -193,9 +226,7 @@ class VoiceInOut(Node):
         if self.can_listen:
             self.get_logger().debug("Processing audio input for speech recognition.")
             try:
-                user_query = recognizer.recognize_faster_whisper(
-                    audio_input, language="en", model="small"
-                )
+                user_query = self.do_recognize_speech(audio_input, recognizer)
                 if user_query.strip() == "":
                     self.get_logger().debug("No speech detected.")
                 else:
