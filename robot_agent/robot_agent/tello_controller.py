@@ -305,7 +305,7 @@ class TelloController(Node):
             time_str = datetime.now().strftime("%H:%M:%S:%f")
             print(Fore.CYAN + f"[{time_str}] End takeoff tool time..")
 
-            return f"{self.robot_name} is taking off."
+            return f"We sent a command to takeoff {self.robot_name}."
         except Exception as e:
             return f"Failed to take off {self.robot_name}: {e}"
 
@@ -357,7 +357,7 @@ class TelloController(Node):
             time_str = datetime.now().strftime("%H:%M:%S:%f")
             print(Fore.CYAN + f"[{time_str}] End motion time..")
 
-            return f"Moved {self.robot_name} with linear={linear}, angular={angular} for {duration}s and then stopped."
+            return f"We sent a command to move {self.robot_name} with linear={linear}, angular={angular} for {duration}s and then stopped."
         except Exception as e:
             return f"Failed to move {self.robot_name}: {e}"
 
@@ -417,8 +417,8 @@ class TelloController(Node):
 
         if battery_level is None:
             return "Battery level is unknown. Cannot perform flip."
-        if battery_level < 20.0:
-            return f"Battery too low ({battery_level:.2f}%). Flip maneuver is disabled. (Requires >20%)"
+        if battery_level < 30.0:
+            return f"Battery too low ({battery_level:.2f}%). Flip maneuver is disabled. (Requires >30%)"
 
         if current_em_sky == 1 and (current_fly_mode == 6 or current_fly_mode == 31):
             pass
@@ -482,7 +482,7 @@ class TelloController(Node):
             time_str = datetime.now().strftime("%H:%M:%S:%f")
             print(Fore.CYAN + f"[{time_str}] End flip time..")
 
-            return f"{self.robot_name} performed a flip to the {direction}."
+            return f"We sent a command to flip {self.robot_name} to the {direction}."
         except Exception as e:
             return f"Failed to flip {self.robot_name}: {e}"
 
@@ -696,12 +696,14 @@ class TelloController(Node):
             "But if the user asks for something that is not possible with the tools, and for which you don't have enough information, or are unsure, "
             "either ask the user to clarify his/her request, or tell him/her that you don't know.",
             about_your_capabilities="You capabilities are limited to the available tools. Anything that is asked to you and not provided by a tool is beyond your capabilities",
-            critical_instructions="Always use the corresponding tool if you can. If the user ask you to perform an action requiring to move the robot, always use the move tool."
+            critical_instructions="Always use the corresponding tool to the user query. If the user ask you to perform an action requiring to move the robot, always use the move tool."
             "Same for all other tools: if the user ask for an information/action requiring to use a tool, always use the relevant tool. "
+            "It is very important that you always use the available tools."
             "Also, tell the user what you are trying to do."
             "If an error occured, tell the user about it."
             "Be concise and clear in your answers."
-            "Produce small, clear sentences",
+            "Produce small, clear sentences"
+            "Do not repeat yourself.",
         )
         return prompts
 
@@ -732,11 +734,11 @@ class TelloController(Node):
                             - z-axis: +z up, -z down
                             Examples:
                             - "go forward at 1.5 m/s" -> [1.5, 0.0, 0.0] (here user requested a speed of 1.5 m/s so we set the magnitude to 1.5 in the vector)
-                            - "go backward at 1 m/s" -> [-0.75, 0.0, 0.0] (here user requested a speed of 0.75 m/s so we set the magnitude to 0.75 in the vector, and note the minus because it is backward!)
-                            - "go left at 1.2 m/s" -> [0.0, 0.2, 0.0] (here user requested a speed of 0.2 m/s so we set the magnitude to 0.2 in the vector)
+                            - "go backward at 0.75 m/s" -> [-0.75, 0.0, 0.0] (here user requested a speed of 0.75 m/s so we set the magnitude to 0.75 in the vector, and note the minus because it is backward!)
+                            - "go left at 0.2 m/s" -> [0.0, 0.2, 0.0] (here user requested a speed of 0.2 m/s so we set the magnitude to 0.2 in the vector)
                             - "go right at 1.2 m/s" -> [0.0, -1.2, 0.0] (here user requested a speed of 1.2 m/s so we set the magnitude to 1.2 in the vector, and note the minus because it is right!)
                             - "go up at 0.5 m/s" -> [0.0, 0.0, 0.5] (here user requested a speed of 0.5 m/s so we set the magnitude to 0.5 in the vector)
-                            - "go down at 0.5 m/s" -> [0.0, 0.0, -1.5] (here user requested a speed of 1.5 m/s so we set the magnitude to 1.5 in the vector, and note the minus because it is down!)
+                            - "go down at 1.5 m/s" -> [0.0, 0.0, -1.5] (here user requested a speed of 1.5 m/s so we set the magnitude to 1.5 in the vector, and note the minus because it is down!)
                             - "go forward and up at 1 m/s" -> [0.707, 0.0, 0.707] (normalize magnitude to 1)
                             These are just examples, you have to construct the vector based on the user's request and the coordinate system explained above. Note that the user may not provide a speed, in that case use a default of 1 m/s or -1 m/s based on the direction.
 
@@ -753,7 +755,10 @@ class TelloController(Node):
 
         @tool
         def land():
-            """Command the robot to land and transition from air to ground. It cannot be used if the robot is already on the ground."""
+            """Command the robot to land and transition from air to ground. It cannot be used if the robot is already on the ground.
+            Always use this tool when the user asked you to land the drone, unless the user requests palm landing.
+            If the user explictly asks for palm landing, use the palm_land tool instead.
+            """
             return self.land()
 
         @tool
@@ -841,3 +846,4 @@ class TelloController(Node):
             throw_and_go,
             palm_land,
         ]
+

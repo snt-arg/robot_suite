@@ -62,7 +62,7 @@ class ObjectDetector(PluginNode):
     minimum_prob = 0.4
 
     # Variable to perform object detection on only some frames
-    process_interval = 5e7  # process every 0.05 scond
+    process_interval = 10e7  # process every 0.1 second
 
     # topic names
     image_raw_topic = "/camera/image_raw"  # raw image frames from the drone's camera
@@ -80,10 +80,6 @@ class ObjectDetector(PluginNode):
 
         # Creating the Node
         super().__init__(name)
-
-        # init model
-        init_model_thread = Thread(target=self._init_model, daemon=True)
-        init_model_thread.start()
 
         # init topic names
         self._init_parameters()
@@ -122,7 +118,7 @@ class ObjectDetector(PluginNode):
         self.detection_thread.start()
 
     ################################ Init functions ##################################################################################
-    def _init_model(self) -> None:
+    def init_model(self) -> None:
         """Method to initialize the object detection model based on its type and name.
         Right now, one single type is supported : 'yolo'"""
         match self.model_type.lower():
@@ -232,11 +228,12 @@ class ObjectDetector(PluginNode):
         For each image processed, it saves in the log that an image has been processed.
         Then converts that image into cv2 format before performing object detection on that image and saving
         the result in self.image_all_detected"""
-
+        self.get_logger().debug("Received a raw frame!")
         # converting ROS Image message to cv2 image
         with self.image_lock:
             self.image_raw = self.cv_bridge.imgmsg_to_cv2(img, "rgb8")
         self.new_frame_event.set()
+        self.get_logger().debug("Updated current frame to new frame!")
 
     def detection(self, frame) -> None:
         """Function to perform person object detection on a single frame.
@@ -248,6 +245,7 @@ class ObjectDetector(PluginNode):
             persist=True,
             classes=self.classes_ID,
             conf=self.minimum_prob,
+            tracker="bytetrack.yaml",  # using bytetrack because it is faster
         )
 
         # Initializing all bounding boxes messages
@@ -283,12 +281,15 @@ class ObjectDetector(PluginNode):
         callback funtion for the publisher node (to topic /camera/image_detected).
         The image on which object detection has been performed (self.image_all_detected) is published on the topic '/all_detected'
         """
+
         while rclpy.ok():
+
             if self.model is None:
                 self.get_logger().warning(
                     "Model not yet initialized. Cannot perform object detection."
                 )
-                return
+                continue
+
             if self.new_frame_event.wait(timeout=0.1):
                 self.new_frame_event.clear()
 
@@ -313,7 +314,9 @@ class ObjectDetector(PluginNode):
                             "Publishing a frame on all detected topic"
                         )
                     except Exception as e:
-                        self.get_logger().error("An error occured, ", e)
+                        self.get_logger().error(
+                            "An error occured, when trying to publish the frames", e
+                        )
                 else:
                     self.get_logger().debug(
                         "No raw images received yet. Cannot perform object detection"
@@ -365,7 +368,9 @@ def main(args=None):
 
     # Node instantiation
     detector = ObjectDetector("object_detection_node")
+    detector.init_model()  # initializing the model before spinning
 
+    # detector.get_logger().set_level(rclpy.logging.LoggingSeverity.DEBUG)
     # execute the callback function until the global executor is shutdown
     rclpy.spin(detector)
 

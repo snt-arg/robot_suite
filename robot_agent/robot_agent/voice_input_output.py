@@ -1,6 +1,7 @@
 import os
 from dotenv import load_dotenv
 
+import sounddevice # to silence ALSA warning messages
 
 from std_msgs.msg import String
 
@@ -9,9 +10,15 @@ from rclpy.node import Node
 import time
 
 import speech_recognition as sr
+from speech_recognition.exceptions import WaitTimeoutError
+from speech_recognition.audio import AudioData
+
 from piper import PiperVoice, SynthesisConfig
 import pyaudio
 
+import threading
+
+import re
 
 load_dotenv()  # This loads the variables from .env file
 
@@ -58,8 +65,13 @@ class VoiceInOut(Node):
 
         # ---> Initialize speech-to-text recognizer
         self.stt_recognizer = sr.Recognizer()
+        
+        # to avoid the energy threshold from changing when using a good mic, 
+        # which could cause more silent chunks to be sent to the speech recognition model, causing hallucination 
+        self.stt_recognizer.dynamic_energy_threshold = False 
+        
         self.stt_recognizer.pause_threshold = (
-            0.9  # seconds of non-speaking audio before a phrase is considered complete
+            1.2  # seconds of non-speaking audio before a phrase is considered complete
         )
 
         # ---> Initialize microphone for speech input
@@ -69,6 +81,9 @@ class VoiceInOut(Node):
         self.get_logger().debug("Microphone calibrated.")
 
         self.stt_mic = sr.Microphone(sample_rate=22050)
+
+        
+        self.common_hallucinations = re.compile(r"^thanks?\s*(you|u)?\s*(for)?\s*(watching)?\s*(my)?\s*(video)?\s*[.!?\s]*$|^((you)\s*)*$|^(\s*[.?!])*$", re.I)
 
         self.do_recognize_speech: callable = None
 
@@ -174,22 +189,27 @@ class VoiceInOut(Node):
         dummy_audio = sr.AudioData(b"\0" * 22050, 22050, 2)
         try:
             # trying to access OPENAI online API with dummy audio
-            self.do_recognize_speech = (
-                lambda audio, recognizer: recognizer.recognize_openai(
-                    audio, language="en", model="whisper-1"
-                )
+            self.do_recognize_speech = lambda audio, recognizer: recognizer.recognize_openai(
+                audio,
+                language="en",
+                model="whisper-1",
+                temperature=0,
             )
             self.do_recognize_speech(dummy_audio, self.stt_recognizer)
             self.get_logger().info(
-                "Internet connection detected! Processing with online Whisper API."
+                f"\033[95m Internet connection detected! Processing with online Whisper API. \033[00m"
             )
         except Exception as e:
             self.get_logger().info(
-                f"An exception occured when trying to access OPENAI online API {e}.\n Falling back to local faster-whisper model."
+                f"\033[92m An exception occured when trying to access OPENAI online API {e}.\n \03395m Falling back to local faster-whisper model. \033[00m"
             )
             self.do_recognize_speech = (
                 lambda audio, recognizer: recognizer.recognize_faster_whisper(
-                    audio, language="en", model="small"
+                    audio,
+                    language="en",
+                    model="small",
+                    condition_on_previous_text=False,
+                    temperature=0,
                 )
             )
             try:
@@ -202,6 +222,32 @@ class VoiceInOut(Node):
                 )
 
     ##########################################  Speech-to-text Methods ############################################################################
+    def listen_in_background(self, source, recognizer, callback, phrase_time_limit=None):
+        running = True
+
+        def threaded_listen():
+            nonlocal running
+            with source as s:
+                while running:
+                    try:  # listen for 0.1 second, then check again if the stop function has been called
+                        audio = recognizer.listen(s, 0.1, phrase_time_limit)
+                    except WaitTimeoutError:  # listening timed out, just try again
+                        pass
+                    else:
+                        if running:
+                            callback(recognizer, audio)
+                            time.sleep(0.1)
+
+        def stopper(wait_for_stop=True):
+            nonlocal running
+            running = False
+            if wait_for_stop:
+                listener_thread.join()  # block until the background thread is done, which can take around 1 second
+
+        listener_thread = threading.Thread(target=threaded_listen)
+        listener_thread.daemon = True
+        listener_thread.start()
+        return stopper
 
     def start_listening(self) -> None:
         """Method to start the listening for voice input"""
@@ -209,8 +255,8 @@ class VoiceInOut(Node):
             f"Started listening for user query at {self.get_clock().now()}"
         )
 
-        self.stop_listening = self.stt_recognizer.listen_in_background(
-            self.stt_mic, self.publish_audio_as_text
+        self.stop_listening = self.listen_in_background(
+            self.stt_mic, self.stt_recognizer, self.publish_audio_as_text
         )
 
     def pause_listening(self) -> None:
@@ -220,15 +266,20 @@ class VoiceInOut(Node):
             self.get_logger().debug(
                 f"Stopped listening for user query at {self.get_clock().now()}."
             )
+            #time.sleep(0.15)  # small delay to let audio buffer clear
             self.stop_listening = None
-
+    
+        
     def publish_audio_as_text(self, recognizer, audio_input):
         if self.can_listen:
             self.get_logger().debug("Processing audio input for speech recognition.")
             try:
+                
                 user_query = self.do_recognize_speech(audio_input, recognizer)
                 if user_query.strip() == "":
                     self.get_logger().debug("No speech detected.")
+                elif re.match(self.common_hallucinations, user_query):
+                    self.get_logger().debug(f"Speech recognition model probably hallucinated: \033[91m \"{user_query}\" \033[00m")
                 else:
                     user_query_msg = String()
                     user_query_msg.data = user_query
@@ -247,7 +298,8 @@ class VoiceInOut(Node):
         if self.can_talk:
             try:
                 self.stop_tts = False
-                self.pause_listening()
+                if self.stop_listening is not None:
+                    self.pause_listening()
                 self.get_logger().debug(f"Now speaking at {self.get_clock().now()}.")
 
                 for chunk in self.tts_voice.synthesize(
@@ -285,3 +337,4 @@ class VoiceInOut(Node):
 
         # Call base class destructor
         super().destroy_node()
+

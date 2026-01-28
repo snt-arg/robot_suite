@@ -231,10 +231,7 @@ function spot_install(){
         pip3 install --no-cache-dir -r ./requirements.txt  --ignore-installed
     fi
     
-    mkdir -p drivers
     cd drivers
-    
-  
     # installing bosdyn_msgs
     git clone --recurse-submodules https://github.com/bdaiinstitute/bosdyn_msgs.git
     PIP_CONSTRAINT=./bosdyn_msgs/pip-constraint.txt rosdep install -i -y --from-path ../ --skip-keys "$(cat ./bosdyn_msgs/rosdep-skip.txt)"
@@ -249,43 +246,7 @@ function spot_install(){
 
     # EDIT: This change is no longer necessary with the current version of proto2ros, so the two lines above are commented.
     
-    cd /
-    
-    # installing spot_cpp_sdk 
-    mkdir spot_sdk_install
-    cd spot_sdk_install
-    
-    git clone https://github.com/microsoft/vcpkg
-    cd vcpkg
-    
-    git checkout 3b213864579b6fa686e38715508f7cd41a50900f
-    
-    ./bootstrap-vcpkg.sh
-    ./vcpkg install grpc:x64-linux
-    ./vcpkg install eigen3:x64-linux
-    ./vcpkg install cli11:x64-linux
-    cd ..
-    
-    
-    git clone https://github.com/maeri18/spot-cpp-sdk.git
-    
-    
-    # The original signal_schema_key.h misses an import (cstdint) following new updates on C++
-    # So we replace their file with a similar file, that import added
-   
-    # rm /spot_sdk_install/spot-cpp-sdk/cpp/bosdyn/client/data_buffer/signal_schema_key.h
-    # mv /workspace/src/robot_suite/files_for_replacing/signal_schema_key.h /spot_sdk_install/spot-cpp-sdk/cpp/bosdyn/client/data_buffer
-    
-    cd spot-cpp-sdk/
-  
-    cd cpp/
- 
-    mkdir build
-    cd build
-    cmake ../ -DCMAKE_TOOLCHAIN_FILE=/spot_sdk_install/vcpkg/scripts/buildsystems/vcpkg.cmake -DCMAKE_INSTALL_PREFIX=/spot_sdk_install/spot-cpp-sdk -DCMAKE_FIND_PACKAGE_PREFER_CONFIG=TRUE
-    
-    make -j6 install package
-    
+
     cd /workspace/src/robot_suite/drivers
     	
     # installing spot_ros2

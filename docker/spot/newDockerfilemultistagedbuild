@@ -1,4 +1,4 @@
-FROM robot_suite:spot_sdk_jazzy
+FROM maeri18/spot_sdk_jazzy
 
 # Set this in the compose file instead
 # ENV RMW_IMPLEMENTATION=rmw_cyclonedds_cpp 
@@ -26,7 +26,7 @@ ARG IN_DOCKER=1
 ENV IN_DOCKER=$IN_DOCKER
 WORKDIR /workspace/src/robot_suite
 SHELL ["/bin/bash", "-c"]
-RUN ./bootstrap.sh spot
+RUN ./test_boostrap.sh spot
 
 RUN echo "source /opt/ros/jazzy/setup.bash" >> ~/.bashrc
 RUN echo "source /workspace/install/setup.bash" >> ~/.bashrc
