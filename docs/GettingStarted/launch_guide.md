@@ -13,7 +13,7 @@ This launch guide assumes that you succesfully installed and built the `robot_su
 1.  Sourcing the suite
 
     ```bash
-    source <path_to_robot_suite>/install/setup.bash
+    source <path_to_workspace>/install/setup.bash
     ```
 
 1.  Launching  
@@ -65,7 +65,7 @@ Else, if you have a stopped container:
     Inside the container,
 
     ```bash
-    source <path_to_robot_suite>/install/setup.bash
+    source <path_to_workspace>/install/setup.bash
     ```
 
 1. Launching  
@@ -93,6 +93,6 @@ Else, if you have a stopped container:
     ```
     - Then inside the container:
     ```bash
-    source /workspace/robot_suite/install/setup.bash
+    source /workspace/install/setup.bash
     ros2 launch robot_bringup tello_launch.py
     ```
