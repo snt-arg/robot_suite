@@ -1,13 +1,11 @@
 remote_controller:
-  ros__parameters:
-    accepted_keys: "w a s d t l q m h f"
-    accepted_mods: []
-    matching_keys: []
-    cmd_topic_name: "/cmd_vel"
-    key_pressed_topic_name: "/key_pressed"
-    battery_level_topic_name: "/flight_data"
-    cam_image_topic_name: "/camera/image_raw"
-    takeoff_topic_name: "/takeoff"
-    land_topic_name: "/land"
-
-  
+    ros__parameters:
+        accepted_keys: "w a s d t l q m h f"
+        accepted_mods: []
+        matching_keys: []
+        cmd_topic_name: "/cmd_vel"
+        key_pressed_topic_name: "/key_pressed"
+        battery_level_topic_name: "/flight_data"
+        cam_image_topic_name: "/camera/image_raw"
+        takeoff_topic_name: "/takeoff"
+        land_topic_name: "/land"

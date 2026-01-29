@@ -17,4 +17,4 @@ For instance, these configuration files allow plugins to subscribe to the approp
 
 The suite also includes a Dockerfile for easy setup, eliminating the need to install dependencies
 on your computer and simplifying the process of switching between different robot platforms.
-For more information, refer to the Docker page.
+For more information, refer to the [Docker page](./GettingStarted/docker.md).

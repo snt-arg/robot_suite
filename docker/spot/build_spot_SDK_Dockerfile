@@ -1,0 +1,55 @@
+FROM ros:jazzy as building_sdk
+
+# Install necessary and useful packages
+RUN apt update && \
+    apt install --no-install-recommends -y \
+    file ssh vim python3-pip wget git iputils-ping clang-tidy \
+    tar zip unzip ros-dev-tools \
+    libprotobuf-dev libgrpc++1.51t64 libprotobuf32t64 libpython3.12 \
+    libcli11-dev libgrpc++-dev libprotoc-dev python3-networkx python3-inflection libboost-python-dev\
+    python3-multipledispatch protobuf-compiler \
+    ros-$ROS_DISTRO-image-transport ros-$ROS_DISTRO-ament-cmake-mypy \
+    ros-$ROS_DISTRO-rosbridge-suite ros-$ROS_DISTRO-cv-bridge-dbgsym\ 
+    ros-$ROS_DISTRO-rclcpp ros-$ROS_DISTRO-teleop-twist-keyboard\
+    ros-$ROS_DISTRO-rclpy  ros-$ROS_DISTRO-bondcpp-dbgsym \
+    alsa-base alsa-utils portaudio19-dev  &&\
+    rm -rf /var/lib/apt/lists/*
+
+
+WORKDIR /
+SHELL ["/bin/bash", "-c"]
+RUN bash <<EOF
+# installing spot_cpp_sdk 
+    cd /
+    mkdir spot_sdk_install
+    cd spot_sdk_install
+    
+    git clone https://github.com/microsoft/vcpkg
+    cd vcpkg
+    
+    git checkout 3b213864579b6fa686e38715508f7cd41a50900f
+    
+    ./bootstrap-vcpkg.sh
+    ./vcpkg install grpc:x64-linux
+    ./vcpkg install eigen3:x64-linux
+    ./vcpkg install cli11:x64-linux
+    cd ..
+    
+    
+    git clone https://github.com/maeri18/spot-cpp-sdk.git
+    
+    cd spot-cpp-sdk/
+  
+    cd cpp/
+ 
+    mkdir build
+    cd build
+    cmake ../ -DCMAKE_TOOLCHAIN_FILE=/spot_sdk_install/vcpkg/scripts/buildsystems/vcpkg.cmake -DCMAKE_INSTALL_PREFIX=/spot_sdk_install/spot-cpp-sdk -DCMAKE_FIND_PACKAGE_PREFER_CONFIG=TRUE
+    
+    make -j6 install package
+
+EOF
+
+
+FROM ros:jazzy
+COPY --from=building_sdk /spot_sdk_install/spot-cpp-sdk /spot_sdk_install/spot-cpp-sdk

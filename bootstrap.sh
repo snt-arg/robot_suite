@@ -80,7 +80,13 @@ ask_user_input(){
 install_tellopy() {
     git clone https://github.com/hanyazou/TelloPy.git tellopy
     cd tellopy
-    pip install .
+
+    if [ "$IN_DOCKER" = "1" ]; then
+        pip install . --break-system-packages
+    else
+        pip install .
+    fi
+    
 
     cd ..
     sudo rm -rf tellopy
@@ -113,6 +119,59 @@ if [ "$(command -v pip)" == "" ]; then
     fi
 fi
 
+# downloading piper models
+download_piper_models() {
+    local MODEL_DIR="/workspace/robot_suite/robot_agent/robot_agent/models"
+
+    # Voice-specific info (directory + list of files)
+    local FEMALE_DIR="$MODEL_DIR/female"
+    local FEMALE_URL="https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/amy/medium"
+    local FEMALE_FILES=(
+        "en_US-amy-medium.onnx"
+        "en_US-amy-medium.onnx.json"
+    )
+
+    local MALE_DIR="$MODEL_DIR/male"
+    local MALE_URL="https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/kusal/medium"
+    local MALE_FILES=(
+        "en_US-kusal-medium.onnx"
+        "en_US-kusal-medium.onnx.json"
+    )
+
+
+    download_voice() {
+        local dest_dir="$1"
+        local base_url="$2"
+        shift 2
+        local files=("$@")
+
+        mkdir -p "$dest_dir"
+
+        for file in "${files[@]}"; do
+            local url="$base_url/$file"
+            local out="$dest_dir/$file"
+
+            if [[ ! -f "$out" ]]; then
+                echo "→ Downloading $file..."
+                wget -q --show-progress "$url" -O "$out"
+                if [[ $? -ne 0 ]]; then
+                    print_error "Failed to download $file from $url. Download the file manually at $url. "
+                fi
+            else
+                print_warning "$file already exists, skipping"
+            fi
+        done
+    }
+    
+    print_info "Downloading Piper TTS models..."
+
+    download_voice "$FEMALE_DIR" "$FEMALE_URL" "${FEMALE_FILES[@]}"
+
+    download_voice "$MALE_DIR" "$MALE_URL" "${MALE_FILES[@]}"
+
+}
+
+
 
 function common_install(){
     # Ensure this script is run as root
@@ -126,8 +185,13 @@ function common_install(){
     # Check if rosdep is installed
     if [ "$(command -v rosdep)" == "" ]; then
         print_warning "rosdep is not installed. Installing it..."
+        
+        if [ "$IN_DOCKER" = "1" ]; then
+            pip install rosdep --break-system-packages
+        else
+            pip install rosdep
+        fi
 
-        pip install rosdep
         sudo rosdep init
         rosdep update
     else
@@ -135,25 +199,19 @@ function common_install(){
         rosdep update
     fi
 
-    # Check if Python venv module is available
-    if python3 -m venv --help >/dev/null 2>&1; then
-        python3 -m venv suitenv
-    else
-        print_warning "Python venv module is not installed.  Installing it... "
-        sudo apt update && sudo apt install -y python3-venv
-    fi
-
-    touch ./suitenv/COLCON_IGNORE
-
-    source suitenv/bin/activate
-    export PYTHONPATH=$(echo $VIRTUAL_ENV/lib/python*/site-packages):$PYTHONPATH
-    echo "export PYTHONPATH=$(echo $VIRTUAL_ENV/lib/python*/site-packages):$PYTHONPATH" >> ~/.bashrc
-
     print_info "Installing dependencies for ROS packages"
     rosdep install --from-paths . -y
 
     print_info "Installing dependencies for the project"
-    pip install -r requirements.txt
+    if [ "$IN_DOCKER" = "1" ]; then
+        pip install --extra-index-url https://download.pytorch.org/whl/cpu torch torchvision --break-system-packages
+        pip install -r requirements.txt --break-system-packages
+    else
+        pip install --extra-index-url https://download.pytorch.org/whl/cpu torch torchvision 
+        pip install -r requirements.txt
+    fi
+
+    download_piper_models
 }
 
 function tello_install(){
@@ -167,12 +225,13 @@ function tello_install(){
 function spot_install(){
     print_info "Installing Spot driver 2"
     
-    pip3 install --no-cache-dir -r ./requirements.txt --break-system-packages --ignore-installed
+    if [ "$IN_DOCKER" = "1" ]; then
+        pip3 install --no-cache-dir -r ./requirements.txt  --ignore-installed --break-system-packages
+    else
+        pip3 install --no-cache-dir -r ./requirements.txt  --ignore-installed
+    fi
     
-    mkdir -p drivers
     cd drivers
-    
-  
     # installing bosdyn_msgs
     git clone --recurse-submodules https://github.com/bdaiinstitute/bosdyn_msgs.git
     PIP_CONSTRAINT=./bosdyn_msgs/pip-constraint.txt rosdep install -i -y --from-path ../ --skip-keys "$(cat ./bosdyn_msgs/rosdep-skip.txt)"
@@ -181,75 +240,40 @@ function spot_install(){
     ARCH=amd64  # or arm64
     #for url in $(cat ${ARCH}-dpkg.txt); do wget $url && sudo apt install -y ./$(basename $url); done
     
-    # Changing the generate.py file in proto2ros with another one where importlib.resources.path is not used as an os.PathLike object
-    rm /workspace/src/robot_suite/drivers/bosdyn_msgs/proto2ros/proto2ros/proto2ros/cli/generate.py
-    mv /workspace/src/robot_suite/files_for_replacing/generate.py /workspace/src/robot_suite/drivers/bosdyn_msgs/proto2ros/proto2ros/proto2ros/cli/
+    # Changing the generate.py file in proto2ros with another one where importlib.resources.path is not used as an os.PathLike object 
+    #rm /workspace/src/robot_suite/drivers/bosdyn_msgs/proto2ros/proto2ros/proto2ros/cli/generate.py
+    #mv /workspace/src/robot_suite/files_for_replacing/generate.py /workspace/src/robot_suite/drivers/bosdyn_msgs/proto2ros/proto2ros/proto2ros/cli/
+
+    # EDIT: This change is no longer necessary with the current version of proto2ros, so the two lines above are commented.
     
-    
-    cd /
-    
-    # installing spot_cpp_sdk 
-    mkdir spot_sdk_install
-    cd spot_sdk_install
-    
-    git clone https://github.com/microsoft/vcpkg
-    cd vcpkg
-    
-    git checkout 3b213864579b6fa686e38715508f7cd41a50900f
-    
-    ./bootstrap-vcpkg.sh
-    ./vcpkg install grpc:x64-linux
-    ./vcpkg install eigen3:x64-linux
-    ./vcpkg install cli11:x64-linux
-    cd ..
-    
-    
-    git clone https://github.com/boston-dynamics/spot-cpp-sdk.git
-    
-    
-    # The original signal_schema_key.h misses an import (cstdint) following new updates on C++
-    # So we replace their file with a similar file, that import added
-   
-    rm /spot_sdk_install/spot-cpp-sdk/cpp/bosdyn/client/data_buffer/signal_schema_key.h
-    mv /workspace/src/robot_suite/files_for_replacing/signal_schema_key.h /spot_sdk_install/spot-cpp-sdk/cpp/bosdyn/client/data_buffer
-    
-    cd spot-cpp-sdk/
-  
-    cd cpp/
- 
-    mkdir build
-    cd build
-    cmake ../ -DCMAKE_TOOLCHAIN_FILE=/spot_sdk_install/vcpkg/scripts/buildsystems/vcpkg.cmake -DCMAKE_INSTALL_PREFIX=/spot_sdk_install/spot-cpp-sdk -DCMAKE_FIND_PACKAGE_PREFER_CONFIG=TRUE
-    
-    make -j6 install package
-    
+
     cd /workspace/src/robot_suite/drivers
     	
     # installing spot_ros2
-    git clone https://github.com/bdaiinstitute/spot_ros2.git
+    git clone https://github.com/maeri18/spot_ros2.git
     cd spot_ros2 
     git submodule init
     git submodule update
     
     # Replacing files with import errors with correct files. 
     ## Three files had an import error on cv_bridge (wrong extension, .h when it should be .hpp). 
-    rm /workspace/src/robot_suite/drivers/spot_ros2/spot_driver/src/image_stitcher/image_stitcher.cpp /workspace/src/robot_suite/drivers/spot_ros2/spot_driver/src/conversions/decompress_images.cpp /workspace/src/robot_suite/drivers/spot_ros2/spot_driver/src/api/default_image_client.cpp
+    #rm /workspace/src/robot_suite/drivers/spot_ros2/spot_driver/src/image_stitcher/image_stitcher.cpp /workspace/src/robot_suite/drivers/spot_ros2/spot_driver/src/conversions/decompress_images.cpp /workspace/src/robot_suite/drivers/spot_ros2/spot_driver/src/api/default_image_client.cpp
     
-    mv /workspace/src/robot_suite/files_for_replacing/image_stitcher.cpp /workspace/src/robot_suite/drivers/spot_ros2/spot_driver/src/image_stitcher/
+    #mv /workspace/src/robot_suite/files_for_replacing/image_stitcher.cpp /workspace/src/robot_suite/drivers/spot_ros2/spot_driver/src/image_stitcher/
     
-    mv /workspace/src/robot_suite/files_for_replacing/decompress_images.cpp /workspace/src/robot_suite/drivers/spot_ros2/spot_driver/src/conversions/
+    #mv /workspace/src/robot_suite/files_for_replacing/decompress_images.cpp /workspace/src/robot_suite/drivers/spot_ros2/spot_driver/src/conversions/
     
-    mv /workspace/src/robot_suite/files_for_replacing/default_image_client.cpp /workspace/src/robot_suite/drivers/spot_ros2/spot_driver/src/api/
+    #mv /workspace/src/robot_suite/files_for_replacing/default_image_client.cpp /workspace/src/robot_suite/drivers/spot_ros2/spot_driver/src/api/
     
     ## One file had an import that is no more necessary (#include <gmock/gmock-generated-matchers.h> when new versions of gmock do not require this)
     
-    rm /workspace/src/robot_suite/drivers/spot_ros2/spot_driver/test/include/spot_driver/matchers.hpp
+    #rm /workspace/src/robot_suite/drivers/spot_ros2/spot_driver/test/include/spot_driver/matchers.hpp
     
-    mv /workspace/src/robot_suite/files_for_replacing/matchers.hpp /workspace/src/robot_suite/drivers/spot_ros2/spot_driver/test/include/spot_driver/
+    #mv /workspace/src/robot_suite/files_for_replacing/matchers.hpp /workspace/src/robot_suite/drivers/spot_ros2/spot_driver/test/include/spot_driver/
     
     ## Replacing the spot driver launch with our custom launch file.
     rm /workspace/src/robot_suite/drivers/spot_ros2/spot_driver/launch/spot_driver.launch.py
-    mv /workspace/src/robot_suite/files_for_replacing/spot_driver.launch.py /workspace/src/robot_suite/drivers/spot_ros2/spot_driver/launch/
+    mv /workspace/src/robot_suite/spot_driver.launch.py /workspace/src/robot_suite/drivers/spot_ros2/spot_driver/launch/
     
     
     cd ../..
@@ -264,6 +288,7 @@ function spot_install(){
 
 case "$1" in
     tello)
+    
         common_install
         tello_install
         
@@ -271,8 +296,9 @@ case "$1" in
         colcon build --symlink-install
         ;;
     spot)
-        spot_install
         common_install
+        spot_install
+        
 
         print_info "Building suite"
         colcon build --symlink-install

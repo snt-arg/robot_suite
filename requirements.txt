@@ -3,8 +3,9 @@ av==13.1.0
 pillow==10.4.0
 py-trees==2.2.3
 pygame==2.6.1
-typing-extensions==4.12.2
-ultralytics==8.3.91
+
+ultralytics==8.3.91 
+lap
 
 jpl-rosa==1.0.8
 colorama==0.4.6
@@ -15,13 +16,25 @@ loguru==0.7.3
 openai==1.93.0
 opencv-python==4.10.0.84
 setuptools<80
-py-trees
 
-empy
-lark
+empy==3.3.4 # version 3.3.4 required for ros2 humble
+lark==1.1.9
 catkin_pkg
-PySide2
-PyQt5
+PySide2 #==5.15.2.1
+PyQt5 #==5.15.11
+#pyyaml
+
+coverage==7.6.1
+soundfile==0.13.1
+PyAudio==0.2.14
+SpeechRecognition[faster-whisper]
+SpeechRecognition[openai]
+piper-tts==1.3.0
+
+sounddevice
+audioop-lts
+
+
 
 
 

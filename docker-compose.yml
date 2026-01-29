@@ -7,13 +7,17 @@ services:
             dockerfile: ./docker/tello/Dockerfile
         environment:
             - DISPLAY=${DISPLAY}
+            - LIBGL_ALWAYS_SOFTWARE=1
             #- RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
         volumes:
             - /tmp/.X11-unix:/tmp/.X11-unix
+            - /dev/dri:/dev/dri  # for hardware acceleration
+        devices:
+            - /dev/snd:/dev/snd
         network_mode: "host"
         tty: true
         stdin_open: true
-        command: "ros2 launch robot_bringup system_launch.py"
+        command: "ros2 launch robot_bringup tello_launch.py"
     spot_suite:
         image: ros:jazzy
         container_name: spot_suite_jazzy
@@ -25,7 +29,9 @@ services:
             #- RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
         volumes:
             - /tmp/.X11-unix:/tmp/.X11-unix
+        devices:
+            - /dev/snd:/dev/snd
         network_mode: "host"
         tty: true
         stdin_open: true
-        command: "ros2 launch robot_bringup system_launch.py"
+        command: "ros2 launch robot_bringup spot_launch.py"

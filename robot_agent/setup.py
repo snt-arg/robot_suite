@@ -13,11 +13,13 @@ setup(
     install_requires=["setuptools"],
     zip_safe=True,
     maintainer="Ines Pastor",
-    maintainer_email="ines.pastor.001@sutdent.uni.lu",
+    maintainer_email="ines.pastor.001@student.uni.lu",
     description="An LLM Agent for robot_suite built on ROSA",
     license="GPL-3.0",
     tests_require=["pytest"],
     entry_points={
-        "console_scripts": ["robot_agent = robot_agent.llm_agent:main"],
+        "console_scripts": [
+            "robot_agent_node = robot_agent.llm_agent:main",
+        ],
     },
 )

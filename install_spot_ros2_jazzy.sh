@@ -16,7 +16,12 @@ done
 sudo apt-get update && sudo apt-get install -y python3-rosdep python3-pip wget
 
 if test -f "$REQUIREMENTS_FILE"; then
-    sudo pip3 install --no-cache-dir -r $REQUIREMENTS_FILE --break-system-packages
+    if [ "$IN_DOCKER" = "1" ]; then
+        sudo pip3 install --no-cache-dir -r $REQUIREMENTS_FILE --break-system-packages
+    else
+        sudo pip3 install --no-cache-dir -r $REQUIREMENTS_FILE 
+    fi
+    
 else
     echo "ERROR: $REQUIREMENTS_FILE not found. Please initialize spot_wrapper with: git submodule init --update"
     exit 1
