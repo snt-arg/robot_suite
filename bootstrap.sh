@@ -121,7 +121,8 @@ fi
 
 # downloading piper models
 download_piper_models() {
-    local MODEL_DIR="/workspace/robot_suite/robot_agent/robot_agent/models"
+    local ROBOT_SUITE_DIR="$1"
+    local MODEL_DIR="$ROBOT_SUITE_DIR/robot_agent/robot_agent/models"
 
     # Voice-specific info (directory + list of files)
     local FEMALE_DIR="$MODEL_DIR/female"
@@ -202,16 +203,17 @@ function common_install(){
     print_info "Installing dependencies for ROS packages"
     rosdep install --from-paths . -y
 
+    apt remove python3-typing-extensions -y # to avoid conflicts with the pip version
     print_info "Installing dependencies for the project"
     if [ "$IN_DOCKER" = "1" ]; then
         pip install --extra-index-url https://download.pytorch.org/whl/cpu torch torchvision --break-system-packages
-        pip install -r requirements.txt --break-system-packages
+        pip install -r requirements.txt --break-system-packages 
     else
         pip install --extra-index-url https://download.pytorch.org/whl/cpu torch torchvision 
-        pip install -r requirements.txt
+        pip install -r requirements.txt 
     fi
 
-    download_piper_models
+    download_piper_models "$(pwd)"
 }
 
 function tello_install(){
@@ -225,20 +227,24 @@ function tello_install(){
 function spot_install(){
     print_info "Installing Spot driver 2"
     
-    if [ "$IN_DOCKER" = "1" ]; then
-        pip3 install --no-cache-dir -r ./requirements.txt  --ignore-installed --break-system-packages
-    else
-        pip3 install --no-cache-dir -r ./requirements.txt  --ignore-installed
-    fi
+    # if [ "$IN_DOCKER" = "1" ]; then
+    #     pip3 install --no-cache-dir -r ./requirements.txt  --ignore-installed --break-system-packages
+    # else
+    #     pip3 install --no-cache-dir -r ./requirements.txt  --ignore-installed
+    # fi
+
+    cd ./drivers
     
-    cd drivers
-    # installing bosdyn_msgs
+    # installing bosdyn_msgs and fetch the last version of proto2ros for jazzy support. this won't be necessary once bosdyn_msgs is updated to support jazzy.
     git clone --recurse-submodules https://github.com/bdaiinstitute/bosdyn_msgs.git
+    git -C bosdyn_msgs checkout 209454f # need this version to be compatible with spot-cpp-sdk 5.1.0, while waiting for jazzy support in the official repo
+    git -C bosdyn_msgs submodule update --init --recursive
+    git -C bosdyn_msgs/proto2ros checkout 0cc2471 # need this to be compatiblle with bosdyn_msgs version above
+    
     PIP_CONSTRAINT=./bosdyn_msgs/pip-constraint.txt rosdep install -i -y --from-path ../ --skip-keys "$(cat ./bosdyn_msgs/rosdep-skip.txt)"
     
-    cd bosdyn_msgs
-    ARCH=amd64  # or arm64
-    #for url in $(cat ${ARCH}-dpkg.txt); do wget $url && sudo apt install -y ./$(basename $url); done
+    # ARCH=amd64  # or arm64
+    # for url in $(cat ${ARCH}-dpkg.txt); do wget $url && sudo apt install -y ./$(basename $url); done
     
     # Changing the generate.py file in proto2ros with another one where importlib.resources.path is not used as an os.PathLike object 
     #rm /workspace/src/robot_suite/drivers/bosdyn_msgs/proto2ros/proto2ros/proto2ros/cli/generate.py
@@ -247,43 +253,27 @@ function spot_install(){
     # EDIT: This change is no longer necessary with the current version of proto2ros, so the two lines above are commented.
     
 
-    cd /workspace/src/robot_suite/drivers
-    	
     # installing spot_ros2
-    git clone https://github.com/maeri18/spot_ros2.git
-    cd spot_ros2 
-    git submodule init
-    git submodule update
+    git clone --recurse-submodules https://github.com/maeri18/spot_ros2.git
+
+
+    cd ..
+
+    # normally not needed if you already do --recurse-submodules
+    # cd spot_ros2 
+    # git submodule init
+    # git submodule update
     
-    # Replacing files with import errors with correct files. 
-    ## Three files had an import error on cv_bridge (wrong extension, .h when it should be .hpp). 
-    #rm /workspace/src/robot_suite/drivers/spot_ros2/spot_driver/src/image_stitcher/image_stitcher.cpp /workspace/src/robot_suite/drivers/spot_ros2/spot_driver/src/conversions/decompress_images.cpp /workspace/src/robot_suite/drivers/spot_ros2/spot_driver/src/api/default_image_client.cpp
-    
-    #mv /workspace/src/robot_suite/files_for_replacing/image_stitcher.cpp /workspace/src/robot_suite/drivers/spot_ros2/spot_driver/src/image_stitcher/
-    
-    #mv /workspace/src/robot_suite/files_for_replacing/decompress_images.cpp /workspace/src/robot_suite/drivers/spot_ros2/spot_driver/src/conversions/
-    
-    #mv /workspace/src/robot_suite/files_for_replacing/default_image_client.cpp /workspace/src/robot_suite/drivers/spot_ros2/spot_driver/src/api/
-    
-    ## One file had an import that is no more necessary (#include <gmock/gmock-generated-matchers.h> when new versions of gmock do not require this)
-    
-    #rm /workspace/src/robot_suite/drivers/spot_ros2/spot_driver/test/include/spot_driver/matchers.hpp
-    
-    #mv /workspace/src/robot_suite/files_for_replacing/matchers.hpp /workspace/src/robot_suite/drivers/spot_ros2/spot_driver/test/include/spot_driver/
     
     ## Replacing the spot driver launch with our custom launch file.
-    rm /workspace/src/robot_suite/drivers/spot_ros2/spot_driver/launch/spot_driver.launch.py
-    mv /workspace/src/robot_suite/spot_driver.launch.py /workspace/src/robot_suite/drivers/spot_ros2/spot_driver/launch/
+    # rm /workspace/robot_suite/drivers/spot_ros2/spot_driver/launch/spot_driver.launch.py
+    # mv /workspace/robot_suite/spot_driver.launch.py /workspace/robot_suite/drivers/spot_ros2/spot_driver/launch/
     
     
-    cd ../..
     
     chmod +x ./install_spot_ros2_jazzy.sh
     ./install_spot_ros2_jazzy.sh
-    
-    cd ../..
     	
-   
 }
 
 case "$1" in
@@ -293,22 +283,21 @@ case "$1" in
         tello_install
         
         print_info "Building suite"
-        colcon build --symlink-install
+        python3 -m colcon build --symlink-install
         ;;
     spot)
         common_install
         spot_install
         
-
         print_info "Building suite"
-        colcon build --symlink-install
+        # python3 -m colcon build --symlink-install
         ;;
     unitree_go1)
         echo "Not yet supported,"
         exit 1
         common_install
         print_info "Building suite"
-        colcon build --symlink-install
+        python3 -m colcon build --symlink-install
         ;;
     *)
         echo "Unknown robot: $1."

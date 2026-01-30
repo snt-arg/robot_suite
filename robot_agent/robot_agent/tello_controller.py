@@ -699,10 +699,8 @@ class TelloController(Node):
             critical_instructions="Always use the corresponding tool to the user query. If the user ask you to perform an action requiring to move the robot, always use the move tool."
             "Same for all other tools: if the user ask for an information/action requiring to use a tool, always use the relevant tool. "
             "It is very important that you always use the available tools."
-            "Also, tell the user what you are trying to do."
-            "If an error occured, tell the user about it."
             "Be concise and clear in your answers."
-            "Produce small, clear sentences"
+            "Produce short, clear sentences"
             "Do not repeat yourself.",
         )
         return prompts
@@ -846,4 +844,3 @@ class TelloController(Node):
             throw_and_go,
             palm_land,
         ]
-

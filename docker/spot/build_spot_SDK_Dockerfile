@@ -1,4 +1,4 @@
-FROM ros:jazzy as building_sdk
+FROM ros:jazzy AS building_sdk
 
 # Install necessary and useful packages
 RUN apt update && \
@@ -52,4 +52,4 @@ EOF
 
 
 FROM ros:jazzy
-COPY --from=building_sdk /spot_sdk_install/spot-cpp-sdk /spot_sdk_install/spot-cpp-sdk
+COPY --from=building_sdk /spot_sdk_install/ /spot_sdk_install/

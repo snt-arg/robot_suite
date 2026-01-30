@@ -45,4 +45,4 @@ sudo apt-get install -y python3-apt
 # Install bosdyn_msgs - automatic conversions of BD protobufs to ROS messages
 
 # Install spot-cpp-sdk
-sudo dpkg -i /spot_sdk_install/spot-cpp-sdk/cpp/build/spot-cpp-sdk_5.0.1.2_amd64.deb
+sudo dpkg -i /spot_sdk_install/spot-cpp-sdk/cpp/build/spot-cpp-sdk_5.1.0_amd64.deb

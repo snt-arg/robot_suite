@@ -33,6 +33,5 @@ RUN echo "#!/bin/bash" >> /entrypoint.sh \
     && chmod a+x /entrypoint.sh
 
 WORKDIR /workspace/robot_suite
-
 ENTRYPOINT ["/entrypoint.sh"]
 CMD ["bash"]

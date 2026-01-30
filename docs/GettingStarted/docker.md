@@ -50,7 +50,7 @@ The main configuration file is `docker-compose.yml`, which defines a separate **
     ```
     Don't forget to replace `<robot_platform>` with the desired platform !
 
-**Available Platforms**
+**Available Platforms** <a id="available-platforms"></a>
 
 Currently, dedicated Docker services (and corresponding containers) are available only for **tello** and **spot**.
 

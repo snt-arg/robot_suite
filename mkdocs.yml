@@ -74,8 +74,10 @@ nav:
           - Robot Behavior Tree: Packages/robot_bt.md
           - Robot Agent: Packages/robot_agent.md
           - Tello Control Station: Packages/tello_control_station.md
+          - Add a New Robot: Packages/add_a_robot.md
     - 🧩 Plugins:
           - About Plugins: Plugins/about_plugins.md
           - Plugin Bridge: Plugins/plugin_base.md
           - Hand gesture Plugin: Plugins/hand_gestures.md
           - Person Tracking Plugin: Plugins/person_tracking.md
+          - Add a New Plugin: Plugins/add_a_plugin.md

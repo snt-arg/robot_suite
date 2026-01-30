@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv
 
-import sounddevice # to silence ALSA warning messages
+import sounddevice  # to silence ALSA warning messages
 
 from std_msgs.msg import String
 
@@ -65,11 +65,11 @@ class VoiceInOut(Node):
 
         # ---> Initialize speech-to-text recognizer
         self.stt_recognizer = sr.Recognizer()
-        
-        # to avoid the energy threshold from changing when using a good mic, 
-        # which could cause more silent chunks to be sent to the speech recognition model, causing hallucination 
-        self.stt_recognizer.dynamic_energy_threshold = False 
-        
+
+        # to avoid the energy threshold from changing when using a good mic,
+        # which could cause more silent chunks to be sent to the speech recognition model, causing hallucination
+        self.stt_recognizer.dynamic_energy_threshold = False
+
         self.stt_recognizer.pause_threshold = (
             1.2  # seconds of non-speaking audio before a phrase is considered complete
         )
@@ -82,8 +82,10 @@ class VoiceInOut(Node):
 
         self.stt_mic = sr.Microphone(sample_rate=22050)
 
-        
-        self.common_hallucinations = re.compile(r"^thanks?\s*(you|u)?\s*(for)?\s*(watching)?\s*(my)?\s*(video)?\s*[.!?\s]*$|^((you)\s*)*$|^(\s*[.?!])*$", re.I)
+        self.common_hallucinations = re.compile(
+            r"^thanks?\s*(you|u)?\s*(for)?\s*(watching)?\s*(my)?\s*(video)?\s*[.!?\s]*$|^((you)\s*)*$|^(\s*[.?!])*$",
+            re.I,
+        )
 
         self.do_recognize_speech: callable = None
 
@@ -189,11 +191,13 @@ class VoiceInOut(Node):
         dummy_audio = sr.AudioData(b"\0" * 22050, 22050, 2)
         try:
             # trying to access OPENAI online API with dummy audio
-            self.do_recognize_speech = lambda audio, recognizer: recognizer.recognize_openai(
-                audio,
-                language="en",
-                model="whisper-1",
-                temperature=0,
+            self.do_recognize_speech = (
+                lambda audio, recognizer: recognizer.recognize_openai(
+                    audio,
+                    language="en",
+                    model="whisper-1",
+                    temperature=0,
+                )
             )
             self.do_recognize_speech(dummy_audio, self.stt_recognizer)
             self.get_logger().info(
@@ -222,7 +226,9 @@ class VoiceInOut(Node):
                 )
 
     ##########################################  Speech-to-text Methods ############################################################################
-    def listen_in_background(self, source, recognizer, callback, phrase_time_limit=None):
+    def listen_in_background(
+        self, source, recognizer, callback, phrase_time_limit=None
+    ):
         running = True
 
         def threaded_listen():
@@ -266,20 +272,21 @@ class VoiceInOut(Node):
             self.get_logger().debug(
                 f"Stopped listening for user query at {self.get_clock().now()}."
             )
-            #time.sleep(0.15)  # small delay to let audio buffer clear
+            # time.sleep(0.15)  # small delay to let audio buffer clear
             self.stop_listening = None
-    
-        
+
     def publish_audio_as_text(self, recognizer, audio_input):
         if self.can_listen:
             self.get_logger().debug("Processing audio input for speech recognition.")
             try:
-                
+
                 user_query = self.do_recognize_speech(audio_input, recognizer)
                 if user_query.strip() == "":
                     self.get_logger().debug("No speech detected.")
                 elif re.match(self.common_hallucinations, user_query):
-                    self.get_logger().debug(f"Speech recognition model probably hallucinated: \033[91m \"{user_query}\" \033[00m")
+                    self.get_logger().debug(
+                        f'Speech recognition model probably hallucinated: \033[91m "{user_query}" \033[00m'
+                    )
                 else:
                     user_query_msg = String()
                     user_query_msg.data = user_query
@@ -337,4 +344,3 @@ class VoiceInOut(Node):
 
         # Call base class destructor
         super().destroy_node()
-

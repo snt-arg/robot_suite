@@ -23,7 +23,7 @@ import threading
 from colorama import Fore, Style, init
 import logging
 
-# from robot_agent.spot_controller import SpotController
+from robot_agent.spot_controller import SpotController
 from robot_agent.tello_controller import TelloController
 
 from robot_agent.voice_input_output import VoiceInOut
@@ -55,7 +55,7 @@ load_dotenv()  # This loads the variables from .env file
 
 class Agent(Node):
 
-    llm_model_name = "gpt-3.5-turbo"  #"gpt-4"  
+    llm_model_name = "gpt-3.5-turbo"  # "gpt-4"
     user_query_topic = "/user_query"
     llm_response_topic = "/llm_response"
     change_robot_topic = "/change_robot_name"
@@ -94,7 +94,7 @@ class Agent(Node):
         self.stop_tts_srv = self.create_service(
             Trigger, "/stop_tts_srv", self.stop_tts_callback
         )
-        
+
         # Print the time when the session starts
         start_time_str = time.strftime("%Y-%m-%d %H:%M:%S")
         print(
@@ -103,12 +103,9 @@ class Agent(Node):
             + f"\n--- ROSA Session Started at {start_time_str} ---"
         )
 
-
         self._init_parameters()
         self._init_publishers()
         self._init_subscriptions()
-        
-        
 
     ########################################## Initialization Methods ############################################################################
 
@@ -246,7 +243,7 @@ class Agent(Node):
         Receives user query messages."""
         self.user_query = msg.data
         self.chat_history.add_user_message(self.user_query)
-        
+
         if self.current_robot_name:
             asyncio.run_coroutine_threadsafe(self.send_query(msg.data), self.event_loop)
 
@@ -341,24 +338,22 @@ class Agent(Node):
 # ROS init and run
 def main(args=None):
     rclpy.init(args=args)
-    
-    
-    
+
     # Voice input/output node
     voice_io = VoiceInOut()
-    #voice_io.get_logger().set_level(rclpy.logging.LoggingSeverity.DEBUG)
-    
+    # voice_io.get_logger().set_level(rclpy.logging.LoggingSeverity.DEBUG)
+    print("changes ")
     # text input
     text_input_node = TextInput()
     text_thread = threading.Thread(target=text_input_node.get_query)
     text_thread.start()
 
     # Robot setting up
-    # spot = SpotController("spot")
+    spot = SpotController("spot")
     tello = TelloController("tello")
 
     agent = Agent(tello, tello.robot_name, voice_io)
-    # agent.add_robot(spot, spot.robot_name)
+    agent.add_robot(spot, spot.robot_name)
 
     agent.set_current_robot(tello.robot_name)
 
@@ -368,23 +363,20 @@ def main(args=None):
 
     # Spin also the spot and tello controllers.
     executor.add_node(tello)
-    # executor.add_node(spot)
+    executor.add_node(spot)
 
     # Text input
     executor.add_node(text_input_node)
-    
+
     # Spin also the voice input/output node
     executor.add_node(voice_io)
-    
-    
 
     # Start the ROS spinning in a background thread
     spin_thread = threading.Thread(target=executor.spin)
-    
+
     spin_thread.start()
     spin_thread.join()
-    
-   
+
     executor.shutdown()
 
     agent.destroy_node()
@@ -396,4 +388,3 @@ def main(args=None):
 
 if __name__ == "__main__":
     main()
-
