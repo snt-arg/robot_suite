@@ -32,10 +32,11 @@ Additionally, the documentation can be viewed locally using the following option
 > [!NOTE]
 > The documentation should become available on [http://localhost:8000](http://localhost:8000)
 
-
 ## 📚 Citation
+
 - **Explore the research behind this repository -->** [Link to the paper](https://arxiv.org/abs/2508.09621)
-- **Cite this work:**  
+- **Cite this work:**
+
 ```bibtex
 @article{robotsuite2025,
   title={Interpretable Robot Control via Structured Behavior Trees and Large Language Models},

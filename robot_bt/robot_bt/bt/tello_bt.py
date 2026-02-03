@@ -24,9 +24,9 @@ import py_trees
 from rclpy.node import Node
 from robot_bt.behaviours.tello.actions import (
     LandAction,
-    RemoteOperator,
     GesturesInterpreterAction,
 )
+from robot_bt.behaviours.shared.actions import RemoteOperator
 from robot_bt.behaviours.tello.actions.rotate_tello import RotateTello
 from robot_bt.behaviours.shared.actions import PluginClient
 from robot_bt.behaviours.shared.conditions import CanRunPlugin, IsBatteryLow

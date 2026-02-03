@@ -205,7 +205,7 @@ class VoiceInOut(Node):
             )
         except Exception as e:
             self.get_logger().info(
-                f"\033[92m An exception occured when trying to access OPENAI online API {e}.\n \03395m Falling back to local faster-whisper model. \033[00m"
+                f"\033[92m An exception occured when trying to access OPENAI online API : {e} .\n \033[95m Falling back to local faster-whisper model. \033[00m"
             )
             self.do_recognize_speech = (
                 lambda audio, recognizer: recognizer.recognize_faster_whisper(

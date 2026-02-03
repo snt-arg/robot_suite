@@ -700,8 +700,11 @@ class TelloController(Node):
             "Same for all other tools: if the user ask for an information/action requiring to use a tool, always use the relevant tool. "
             "It is very important that you always use the available tools."
             "Be concise and clear in your answers."
-            "Produce short, clear sentences"
-            "Do not repeat yourself.",
+            "Do not repeat yourself. try to summarize whenever possible in your answers, but be careful about not loosing important informations. give only the most important one"
+            "when possible, try to formulate only one sentence, but be careful to not put false imformations."
+            "do not use unecessary long words, use simple and clear ones"
+            "never repeat yourself and avoid putting obvious informations. dont explain yourself too much. only give one answer, not multiple ones."
+            "it is really important that you never ever repeat a sentence that you already said in your previous answers, even when i is in another formulation. keep your anwers really short",
         )
         return prompts
 

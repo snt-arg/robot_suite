@@ -5,14 +5,15 @@ from robot_bt.behaviours.spot.conditions.is_robot_connected import IsRobotConnec
 from robot_bt.behaviours.spot.conditions.is_battery_low import IsBatteryLow
 
 from robot_bt.behaviours.spot.actions import SitAction
-from robot_bt.behaviours.tello.actions import RemoteOperator
+from robot_bt.behaviours.shared.actions import RemoteOperator
 from robot_bt.behaviours.shared.conditions.is_tracking_mode_correct import (
     IsTrackingModeCorrect,
 )
 from robot_bt.behaviours.shared.conditions.is_rotation_complete import (
     IsRotationComplete,
 )
-from robot_bt.behaviours.tello.actions.rotate_tello import RotateTello
+
+from robot_bt.behaviours.spot.actions import RotateSpot
 
 import py_trees
 from rclpy.node import Node
@@ -206,12 +207,12 @@ class SpotBT(py_trees.composites.Sequence):
                                     children=[
                                         IsRotationComplete(
                                             "IsRotationComplete",
-                                            RotateTello("dummy", self.node),
+                                            RotateSpot("dummy", self.node),
                                         ),
                                         SitAction("SitPersonLost", self.node),
                                     ],
                                 ),
-                                RotateTello("RotateTello", self.node),
+                                RotateSpot("RotateTello", self.node),
                             ],
                         ),
                     ],

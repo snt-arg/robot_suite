@@ -137,3 +137,8 @@ docker run --rm -it \
         tello_suite \
         ros2 launch robot_bringup tello_launch.py
     ```
+
+!!!Note
+
+    For the Spot suite, make sure to configure the configuration file of the spot_ros2 driver with the hostname, user name and password.
+    Before running the driver.

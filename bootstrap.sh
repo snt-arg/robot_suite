@@ -227,11 +227,6 @@ function tello_install(){
 function spot_install(){
     print_info "Installing Spot driver 2"
     
-    # if [ "$IN_DOCKER" = "1" ]; then
-    #     pip3 install --no-cache-dir -r ./requirements.txt  --ignore-installed --break-system-packages
-    # else
-    #     pip3 install --no-cache-dir -r ./requirements.txt  --ignore-installed
-    # fi
 
     cd ./drivers
     
@@ -243,33 +238,20 @@ function spot_install(){
     
     PIP_CONSTRAINT=./bosdyn_msgs/pip-constraint.txt rosdep install -i -y --from-path ../ --skip-keys "$(cat ./bosdyn_msgs/rosdep-skip.txt)"
     
+
     # ARCH=amd64  # or arm64
     # for url in $(cat ${ARCH}-dpkg.txt); do wget $url && sudo apt install -y ./$(basename $url); done
-    
-    # Changing the generate.py file in proto2ros with another one where importlib.resources.path is not used as an os.PathLike object 
-    #rm /workspace/src/robot_suite/drivers/bosdyn_msgs/proto2ros/proto2ros/proto2ros/cli/generate.py
-    #mv /workspace/src/robot_suite/files_for_replacing/generate.py /workspace/src/robot_suite/drivers/bosdyn_msgs/proto2ros/proto2ros/proto2ros/cli/
+    # No need to do the above two lines anymore as we get the spot-cpp-sdk from our base image
 
-    # EDIT: This change is no longer necessary with the current version of proto2ros, so the two lines above are commented.
-    
 
     # installing spot_ros2
     git clone --recurse-submodules https://github.com/maeri18/spot_ros2.git
-
-
     cd ..
-
-    # normally not needed if you already do --recurse-submodules
-    # cd spot_ros2 
-    # git submodule init
-    # git submodule update
     
     
     ## Replacing the spot driver launch with our custom launch file.
     # rm /workspace/robot_suite/drivers/spot_ros2/spot_driver/launch/spot_driver.launch.py
     # mv /workspace/robot_suite/spot_driver.launch.py /workspace/robot_suite/drivers/spot_ros2/spot_driver/launch/
-    
-    
     
     chmod +x ./install_spot_ros2_jazzy.sh
     ./install_spot_ros2_jazzy.sh
