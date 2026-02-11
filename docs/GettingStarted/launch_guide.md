@@ -102,7 +102,7 @@ If you have a stopped container, follow these commands :
         docker exec -ti <robot_platform>_suite bash
         ```
 
-        - Within the container
+        - Then within the container
 
         ```bash
         ros2 run robot_agent robot_agent_node

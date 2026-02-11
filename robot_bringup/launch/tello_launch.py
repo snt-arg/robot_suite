@@ -96,23 +96,23 @@ def create_person_tracking_plugin_launch(ld: LaunchDescription) -> None:
     )
 
 
-def create_land_takeoff_plugin_launch(ld: LaunchDescription) -> None:
-    pkg_dir = get_package_share_directory("robot_bringup")
-    params_file = os.path.join(pkg_dir, "config", "tello_params.yaml")
-    ld.add_action(
-        Node(
-            package="object_following_plugin",
-            executable="takeoff_node",
-            parameters=[params_file],
-        )
-    )
-    ld.add_action(
-        Node(
-            package="object_following_plugin",
-            executable="land_node",
-            parameters=[params_file],
-        )
-    )
+# def create_land_takeoff_plugin_launch(ld: LaunchDescription) -> None:
+#     pkg_dir = get_package_share_directory("robot_bringup")
+#     params_file = os.path.join(pkg_dir, "config", "tello_params.yaml")
+#     ld.add_action(
+#         Node(
+#             package="object_following_plugin",
+#             executable="takeoff_node",
+#             parameters=[params_file],
+#         )
+#     )
+#     ld.add_action(
+#         Node(
+#             package="object_following_plugin",
+#             executable="land_node",
+#             parameters=[params_file],
+#         )
+#     )
 
 
 def create_robot_agent_plugin_launch(ld: LaunchDescription) -> None:
@@ -176,6 +176,6 @@ def generate_launch_description():
     create_hand_tracker_plugin_launch(ld)
     create_robot_agent_plugin_launch(ld)
     create_person_tracking_plugin_launch(ld)
-    create_land_takeoff_plugin_launch(ld)
+    # create_land_takeoff_plugin_launch(ld)
 
     return ld

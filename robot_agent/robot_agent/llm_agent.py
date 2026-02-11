@@ -355,7 +355,7 @@ def main(args=None):
     agent = Agent(tello, tello.robot_name, voice_io)
     agent.add_robot(spot, spot.robot_name)
 
-    #agent.set_current_robot(tello.robot_name)
+    # agent.set_current_robot(tello.robot_name)
 
     # Use executor in a separate thread
     executor = MultiThreadedExecutor()

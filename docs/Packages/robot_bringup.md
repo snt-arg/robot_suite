@@ -1,183 +1,143 @@
 # Robot Bringup
+
 ---
-When handling large projects in ROS2, launch files and configuration files are nice to have.
-The `robot_bringup` package is designed to contain launch files for each robot. Ideally, the launch file in the `robot_bringup` package should start the robot driver, the robot behaviour tree, and robot specific plugins.
+
+When handling large projects in ROS2, launch files and configuration files are nice to have because they allow to easily run the system over different configurations. Launch files allow to run specific packages with different arguments. And these arguments can be defined in configuration files.
+
+The `robot_bringup` package is designed to contain launch files for each robot platform. This provides a layer of abstraction, so that one doesn't have to manually execute each package, plugin of the `robot_suite` manually to interact with a robot. But with a bringup launch file, the user can just execute a signle launch file that will automatically start relevant drivers, packages and plugins for the robot platform.
+
+---
 
 ## Launch files
-Currently, there are launch files for the following platforms :
+
+Launch files allow to start different packages in a seamless way.
+
+The `robot_bringup` package currently supports the following robot platforms :
 
 1. Tello
+
 ```bash
 ros2 launch robot_bringup tello_launch.py
 ```
 
 2. Spot
+
 ```bash
 ros2 launch robot_bringup spot_launch.py
 ```
 
-**Example**
+In case you want to add a launch file for a new robot platform, please refer to [Add a robot](../Packages/add_a_robot.md).
 
-```python
-import os
+!!! Tip
 
-from ament_index_python.packages import get_package_share_directory
+    Always make sure that your ROS2 workspace and environment are well sourced before executing a launch command.
 
-from launch import LaunchDescription
-from launch_ros.actions import Node
-from launch.actions import IncludeLaunchDescription
-from launch.launch_description_sources import (
-    PythonLaunchDescriptionSource,
-    AnyLaunchDescriptionSource,
-)
-from launch.actions import DeclareLaunchArgument, ExecuteProcess
-from launch.substitutions import LaunchConfiguration
+---
 
+## Configuration files
 
+Configuration files allow to define values for the parameters of each node in our system. In launch files, it is possible to define which configuration file should be used for each node. This provides flexibility by allowing to execute the system with different configuration files depending of the use case.
 
-# Function to launch the driver for Tello, using our specific config file
-def create_tello_driver_launch(ld: LaunchDescription) -> None:
-    tello_driver_pkg_dir = get_package_share_directory("tello_driver")
-    pkg_dir = get_package_share_directory("robot_bringup")
-    params_file = os.path.join(pkg_dir, "config", "tello_params.yaml")
+To have a better understanding of the launch files and configuration files, let's explore a simple example.
 
-    ld.add_action(
-        IncludeLaunchDescription(
-            PythonLaunchDescriptionSource(
-                os.path.join(tello_driver_pkg_dir, "launch/tello_driver.launch.py")
-            ),
-            launch_arguments={
-                "params_file": params_file,
-                "use_compression": "true",
-            }.items(),
+---
+
+## Simple example
+
+!!! Example
+
+    Consider an object detection system composed of :
+
+    1. a driver (for image exchanges with a camera),
+    1. a Graphical User Interface (GUI),
+    1. an object detection plugin.
+
+    Instead of manually starting each of the components above, it is possible to define a launch file that will automatically run the components, so that to launch the whole system, we only have to run the launch file.
+
+    A simple use case would be topics names. Taking again the example of our simple object detection system. Let's say that the camera driver and the object detection plugin are two ROS2 nodes exchanging images captured by the camera over a ROS2 topic named '/images'. Then, instead of simply hardcoding the name of that topic in each node, it is better to provide the name of that topic via a configuration file, accessible to both nodes. In fact, the configuration file allow to dynamically change the name of that topic from execution to execution, without having to change the name of that topic in the code of each node.
+
+    **Launch file**
+
+    ```python
+    from launch import LaunchDescription
+
+    from launch_ros.actions import Node
+
+    from launch.actions import DeclareLaunchArgument
+    from launch.substitutions import LaunchConfiguration
+
+    # Function to launch the driver, using our configuration file (param_file)
+    def create_driver_launch(ld: LaunchDescription, param_file: LaunchConfiguration) -> None:
+        ld.add_action(
+            Node(
+                package="driver",
+                executable="camera_driver_node",
+                parameters=[param_file],
+            )
         )
-    )
 
-# Function to start the behaviour tree for Tello
-def create_robot_bt_launch(ld: LaunchDescription) -> None:
-    robot_bt_pkg_dir = get_package_share_directory("robot_bt")
-    pkg_dir = get_package_share_directory("robot_bringup")
-    params_file = os.path.join(pkg_dir, "config", "tello_params.yaml")
-
-    ld.add_action(
-        IncludeLaunchDescription(
-            PythonLaunchDescriptionSource(
-                os.path.join(robot_bt_pkg_dir, "launch/robot_bt_launch.py")
-            ),
-            launch_arguments={
-                "params_file": params_file,
-            }.items(),
+    # Function to start the GUI for visualization
+    def create_gui_launch(ld: LaunchDescription, param_file: LaunchConfiguration) -> None:
+        ld.add_action(
+            Node(
+                package="gui",
+                executable="gui_node",
+                parameters=[param_file],
+                output="screen",
+            )
         )
-    )
 
-
-# Function to start the control station for visualization
-def create_tello_control_station_launch(ld: LaunchDescription) -> None:
-    ld.add_action(
-        Node(
-            package="tello_control_station",
-            executable="control_station",
-            output="screen",
+    # Function to start the object detection plugin
+    def create_object_detection_plugin_launch(ld: LaunchDescription, param_file: LaunchConfiguration) -> None:
+        ld.add_action(
+            Node(
+            package="object_detection_plugin",
+            executable="object_detection_node",
+            parameters=[param_file],
         )
-    )
-
-# Function to start the hand tracker plugin
-def create_hand_tracker_plugin_launch(ld: LaunchDescription) -> None:
-    pkg_dir = get_package_share_directory("robot_bringup")
-    params_file = os.path.join(pkg_dir, "config", "tello_params.yaml")
-    hand_tracker_pck_dir = get_package_share_directory("hand_gestures")
-    ld.add_action(
-        IncludeLaunchDescription(
-            PythonLaunchDescriptionSource(
-                os.path.join(hand_tracker_pck_dir, "launch/hand_gestures_launch.py")
-            ),
-            launch_arguments={
-                "params_file": params_file,
-                "run_annotator": "true",
-                "use_compression": "true",
-            }.items(),
         )
-    )
 
-# Function to start the person tracking plugin
-def create_person_tracking_plugin_launch(ld: LaunchDescription) -> None:
-    pkg_dir = get_package_share_directory("robot_bringup")
-    params_file = os.path.join(pkg_dir, "config", "tello_params.yaml")
-    person_tracking_pck_dir = get_package_share_directory("person_tracking_bringup")
-    ld.add_action(
-        IncludeLaunchDescription(
-            PythonLaunchDescriptionSource(
-                os.path.join(
-                    person_tracking_pck_dir, "launch/person_tracking_launch.py"
-                )
-            ),
-            launch_arguments={
-                "params_file": params_file,
-                "run_associator": "true",
-                "use_compression": "true",
-            }.items(),
+    def generate_launch_description():
+        ld = LaunchDescription()
+        default_params_file = <path_to_configuration_file>
+        parameters = DeclareLaunchArgument(
+            "params_file", default_value=str(default_params_file)
         )
-    )
+        param_file = LaunchConfiguration("params_file")
 
+        # driver
+        create_camera_driver_launch(ld, param_file)
 
-def create_land_takeoff_plugin_launch(ld: LaunchDescription) -> None:
-    pkg_dir = get_package_share_directory("robot_bringup")
-    params_file = os.path.join(pkg_dir, "config", "tello_params.yaml")
-    ld.add_action(
-        Node(
-            package="object_following_plugin",
-            executable="takeoff_node",
-            parameters=[params_file],
-        )
-    )
-    ld.add_action(
-        Node(
-            package="object_following_plugin",
-            executable="land_node",
-            parameters=[params_file],
-        )
-    )
+        # GUI
+        create_gui_launch(, param_file)
 
-# Function to launch the robot agent. It needs to open a separate terminal
-def create_robot_agent_plugin_launch(ld: LaunchDescription) -> None:
-    pkg_dir = get_package_share_directory("robot_bringup")
-    default_params_file = os.path.join(pkg_dir, "config", "tello_params.yaml")
+        # Plugin
+        create_object_detection_plugin_launch(ld, param_file)
 
-    parameters = DeclareLaunchArgument(
-        "params_file", default_value=str(default_params_file)
-    )
+        return ld
 
-    params_file = LaunchConfiguration("params_file")
-    ld.add_action(parameters)
+    ```
 
-    ld.add_action(
-        Node(
-            package="robot_agent",
-            executable="robot_agent_node",
-            parameters=[params_file],
-            prefix="gnome-terminal --",
-        )
-    )
+    In the launch file, we start three nodes, the camera driver, the GUI and the object detection plugin. To each of these nodes, we provide the same configuration file, whose content could be as below:
 
+    **Configuration file**
 
-def generate_launch_description():
-    ld = LaunchDescription()
+    ```yaml
+    camera_driver_node:
+        ros__parameters:
+            image_topic: "/images"
+            image_size: "640x480"
 
-    create_tello_driver_launch(ld)
-    create_robot_bt_launch(ld)
-    create_tello_control_station_launch(ld)
+    gui_node:
+        ros__parameters:
+            image_topic: "/images"
+            gui_theme: "dark"
 
-    # ------------------
-    # -    Plugins     -
-    # ------------------
+    object_detection_node:
+        ros__parameters:
+            image_topic: "/images"
+    ```
 
-    create_hand_tracker_plugin_launch(ld)
-    create_robot_agent_plugin_launch(ld)
-    create_person_tracking_plugin_launch(ld)
-    create_land_takeoff_plugin_launch(ld)
+    In this configuration file, we defined the value of the `image_topic` as `"/images"` for all nodes. There are also node specific parameters such as `image_size`, that is defined only for the driver.
 
-    return ld
-
-```
-
-
+For more information, please refer to [ROS2 documention on launch files](https://docs.ros.org/en/jazzy/Tutorials/Intermediate/Launch/Launch-Main.html).
