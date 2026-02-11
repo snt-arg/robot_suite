@@ -39,9 +39,7 @@ Each robot is assigned a `controller` (e.g. `Tello Controller` for the Tello dro
 
 **voice_input_output.py**
 
-For voice input and p
-
-**text_input.py**
+For voice input and text-to-speech, there is a separate node handling speech recognition (to transcribe the user's voice commands to text), and text-to-speech (to speak out loud the agent's response). 
 
 ---
 
@@ -78,18 +76,6 @@ For voice input and p
 | `start_object_tracking`     | Starts tracking a person holding a specified object from a predefined list.                           | “Follow the person holding a laptop”             |
 | `stop_object_tracking`      | Stops the current object tracking task and clears the tracking target.                                | “Stop tracking”                                  |
 
-**Query Input**
-To input query, one can use
-
-- Text
-- Voice
-
-**Response output**  
-The response output is done by
-
-- printing the textual response on the terminal
-- TTS of the text.
-
 ---
 
 ## Launch the robot agent package
@@ -107,8 +93,139 @@ ros2 run robot_agent robot_agent_node
 
 ---
 
-## Use case example
 
----
+## Adding a robot controller
+To add a new robot, you will have to add a set of tools for interacting with that robot. That is, you have to write a custom `robot controller.py` script for that robot. Inside the robot controller script, you will have to provide the set of tools to interact with the robot along with the prompts for the agent.
 
-## Adding a robot
+```python 
+from rosa import RobotSystemPrompts
+from langchain.agents import tool
+
+from robot_agent.Controller import Controller
+
+class RobotController(Controller):
+
+
+    def __init__(self, robot_name: str = "Robot_name") -> None:
+        super().__init__("robot_controller")
+        # Initialize ROS node here
+        # Example, you can define publishers, subscribers, services etc
+        
+    # Then you can define methods for interacting with the robot. These are the tools the robot agent will use to control the robot. You can for example have a method to move the robot, and other one to get the battery level of the robot.
+
+    def move(self, x : float, y:float):
+        """Sends commands to move the robot according to x and y axis"""
+        # Body of the function
+        # Here, you should handle the actual steps necessary to send move commands to the robot.
+
+    def get_battery_status(self):
+        """Returns the latest battery level of the robot received"""
+        # Body of the function...
+       
+    
+    # Once you are done implementing all the tools, you need to define the "get_prompts()" method. In that method, you define contextual prompts that will be passed to the robot agent. The utility of these prompts is to provide global information on the robot to the agent. You can give the name of the robot, the type of robot (aerial/ground), whether you want the agent to be verbose or not and any other instruction the agent should remember when handling that particular robot.
+    # Example
+    def get_prompts(self):
+        prompts = RobotSystemPrompts(
+            embodiment_and_persona="You are a robotic agent managing a ground wheeled robot.",
+            about_your_capabilities="You capabilities are limited to the available tools. Anything that is asked to you and not provided by a tool is beyond your capabilities",
+            critical_instructions="Always use the corresponding tool whenever possible."
+            "Be concise and clear in your answers."
+            "Do not repeat yourself.",
+        )
+        return prompts
+
+    # The second method that is required for each controller is the "get_tools()" method. This method returns the list of all the tools you implemented for the agent to use them. Be careful to provide a good description of what the tool is used for and how to use the tool, so that the agent will know which tool to use when interacting with users.
+    def get_tools(self):
+
+        @tool
+        def get_battery_level():
+            """Provides the most recent battery level of the robot received. 
+            This should be called before performing power intensive actions to ensure that the robot always has enough battery to perform the action. 
+            """
+            return self.get_battery_level()
+
+        
+        @tool
+        def move(x, y):
+            """
+            Move the robot with specified linear velocities.
+            This function controls movement along three axes (x, y, z) and rotation.
+
+            The coordinate system is as follows:
+            - x-axis: +x is forward, -x is backward.
+            - y-axis: +y is left, -y is right.
+
+            :param x: A float representing the velocity along the x axis 
+            :param y: A float representing the velocity along the y axis
+           
+            """
+            return self.move(x, y)
+
+        
+
+        return [
+            get_battery_level,
+            move,
+        ]
+
+```
+
+To use the new robot controller, you will have to pass it to the llm agent. Please refer to the code below: 
+```python llm_agent.py
+
+from robot_agent.robot_controller import RobotController
+
+# .
+# .
+# . Code of the robot_agent
+
+
+# ROS init and run
+def main(args=None):
+    rclpy.init(args=args)
+
+    # Voice input/output node
+    voice_io = VoiceInOut()
+    # text input
+    text_input_node = TextInput()
+    text_thread = threading.Thread(target=text_input_node.get_query)
+    text_thread.start()
+
+    # Robot setting up
+    my_robot = RobotController("my_robot_name")
+
+    agent = Agent(my_robot, my_robot.robot_name, voice_io)
+
+    # Use executor in a separate thread
+    executor = MultiThreadedExecutor()
+    executor.add_node(agent)
+
+    # Spin also the robot controllers.
+    executor.add_node(my_robot)
+
+    # Text input
+    executor.add_node(text_input_node)
+
+    # Spin also the voice input/output node
+    executor.add_node(voice_io)
+
+    # Start the ROS spinning in a background thread
+    spin_thread = threading.Thread(target=executor.spin)
+
+    spin_thread.start()
+    spin_thread.join()
+
+    executor.shutdown()
+
+    agent.destroy_node()
+    text_input_node.destroy_node()
+    my_robot.destroy_node()
+    voice_io.destroy_node()
+    rclpy.shutdown()
+
+
+if __name__ == "__main__":
+    main()
+
+```

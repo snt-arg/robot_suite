@@ -342,7 +342,7 @@ def main(args=None):
     # Voice input/output node
     voice_io = VoiceInOut()
     # voice_io.get_logger().set_level(rclpy.logging.LoggingSeverity.DEBUG)
-    print("changes ")
+
     # text input
     text_input_node = TextInput()
     text_thread = threading.Thread(target=text_input_node.get_query)
@@ -355,7 +355,7 @@ def main(args=None):
     agent = Agent(tello, tello.robot_name, voice_io)
     agent.add_robot(spot, spot.robot_name)
 
-    agent.set_current_robot(tello.robot_name)
+    #agent.set_current_robot(tello.robot_name)
 
     # Use executor in a separate thread
     executor = MultiThreadedExecutor()
@@ -381,6 +381,7 @@ def main(args=None):
 
     agent.destroy_node()
     # spot.destroy_node()
+    text_input_node.destroy_node()
     tello.destroy_node()
     voice_io.destroy_node()
     rclpy.shutdown()
