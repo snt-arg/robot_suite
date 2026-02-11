@@ -7,7 +7,7 @@ from geometry_msgs.msg import Twist
 
 from tello_msgs.msg import FlipControl, FlightStats
 import time
-from rclpy.node import Node
+from robot_agent.controller import Controller
 import threading
 from typing import List, Optional
 from sensor_msgs.msg import BatteryState
@@ -66,7 +66,7 @@ DICTIONARY_YOLO_OBJECTS = {
 }
 
 
-class TelloController(Node):
+class TelloController(Controller):
     ### Topics
     # motion commands topics
     commands_topic = "/cmd_vel"

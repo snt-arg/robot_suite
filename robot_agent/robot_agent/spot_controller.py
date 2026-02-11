@@ -1,7 +1,7 @@
 from rosa import RobotSystemPrompts
 from langchain.agents import tool
 
-from rclpy.node import Node
+from robot_agent.controller import Controller
 
 from std_msgs.msg import String, Bool
 from geometry_msgs.msg import Twist
@@ -21,7 +21,6 @@ from sensor_msgs.msg import JointState
 
 import time
 from datetime import datetime
-import threading
 
 from typing import List, Optional
 from colorama import Fore, init
@@ -49,7 +48,7 @@ DICTIONARY_YOLO_OBJECTS = {
 }
 
 
-class SpotController(Node):
+class SpotController(Controller):
 
     ### Topics and services
     # velocity commands
