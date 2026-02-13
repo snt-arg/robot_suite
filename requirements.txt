@@ -1,6 +1,6 @@
 mediapipe==0.10.18
 av==13.1.0
-pillow==10.4.0
+pillow==12.1.1
 py-trees==2.2.3
 pygame==2.6.1
 typing-extensions==4.12.2
