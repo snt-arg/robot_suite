@@ -55,6 +55,12 @@ ros2 run plugin_base test_plugin
     In case you want to test your plugin while in development, you can run it in standalone mode.
     In order to use the plugin in standalone mode, you can run the following command:
 
+    ```bash
+    ros2 run <plugin_package_name> <plugin_node_name> --ros-args -p standalone:=true tick_rate:=30
+    ```
+
+    An example with the aforementioned `test_plugin`:
+
     ```sh
     ros2 run plugin_server_base test_plugin --ros-args -p standalone:=true -p tick_rate:=30
     ```

@@ -41,9 +41,24 @@ Each robot is assigned a `controller` (e.g. `Tello Controller` for the Tello dro
 
 For voice input and text-to-speech, there is a separate node handling speech recognition (to transcribe the user's voice commands to text), and text-to-speech (to speak out loud the agent's response).
 
+### Parameters and topics
+
+| Parameter name   | type  | Utility                                          | Possible values                                           |
+| ---------------- | ----- | ------------------------------------------------ | --------------------------------------------------------- |
+| `llm_model_name` | `str` | Defines the LLM model that will be used by ROSA. | `"gpt-4"`,`"gpt-4-turbo"`, `"gpt-3.5-turbo"`,`"llama3.2"` |
+
+| Topics / services    | Type    | Message types          | Utility                                                                                  |
+| -------------------- | ------- | ---------------------- | ---------------------------------------------------------------------------------------- |
+| `/user_query`        | topic   | `std_msgs.msg.String`  | Topic on which the user query is sent                                                    |
+| `/llm_response`      | topic   | `std_msgs.msg.String`  | topic on which the LLM response is sent                                                  |
+| `/change_robot_name` | topic   | `std_msgs.msg.String`  | Topic on which a new robot name can be sent to change the current robot to the new robot |
+| `/stop_tts_srv`      | service | `std_srvs.srv.Trigger` | Service to request the termination of TTS                                                |
+
 ---
 
 ## What are the functionalities available?
+
+As the proper usage of the robot agent is highly dependent on the tools available for interacting with each robot, in this section you can find a summary of each action that the robot agent can carry on each robot platform.
 
 **Tello**
 
@@ -76,6 +91,16 @@ For voice input and text-to-speech, there is a separate node handling speech rec
 | `start_object_tracking`     | Starts tracking a person holding a specified object from a predefined list.                           | “Follow the person holding a laptop”             |
 | `stop_object_tracking`      | Stops the current object tracking task and clears the tracking target.                                | “Stop tracking”                                  |
 
+**Robot management**
+
+| Tool name              | What it does                                                                                                                                                                                 | Example of user input that should trigger this tool  |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| get_current_robot      | Gives the name of the robot that the agent is currently impersonating                                                                                                                        | "Which robot do you currently manage?"               |
+| get_available_robots   | Gives the list of all robots that the agents can manage, ie robots whose controller is loaded                                                                                                | "What are the robots you can handle at the moment? " |
+| change_current_robot   | Changes the current robot that the agent is impersonating to another                                                                                                                         | "Switch to handling the spot robot"                  |
+| load_robot_controllers | Loads all the robot controller classes implemented in the `robot_suite/robot_agent/robot_agent/controllers` folder. This tool should be used with caution as it is not working properly yet. | "Load controllers"                                   |
+| stop_tts               | Commands the TTS to stop. Note that after this tool is executed, the TTS will stop once it is done reading the current sentence.                                                             | "Stop speaking"                                      |
+
 ---
 
 ## Launch the robot agent package
@@ -90,6 +115,12 @@ To run the `robot_agent` package, use
 ```bash
 ros2 run robot_agent robot_agent_node
 ```
+
+!!! Danger "Important"
+
+    Before running the `robot_agent`, make sure all required API keys are defined.
+
+    For example, to use the `OPENAI APIs`, you must provide an API key. You can do so by setting the `OPENAI_API_KEY` environment variable to a valid OpenAI API key.
 
 ---
 
