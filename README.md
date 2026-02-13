@@ -34,7 +34,7 @@ Additionally, the documentation can be viewed locally using the following option
 
 
 ## 📚 Citation
-- **Explore the research behind this repository -->** [Link to the paper](https://arxiv.org/abs/2508.09621)
+- **Explore the research behind this repository -->** [Link to the paper](https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=11261666)
 - **Cite this work:**  
 ```bibtex
 @article{robotsuite2025,

@@ -1,7 +1,7 @@
 # 🐳 Docker
 
-For this project, we are making use of Docker Compose to ease the build and start of containers.
-The `docker-compose.yml` file is/will be composed of services, where each service is
+For this project, we are making use of [Docker Compose](https://docs.docker.com/compose/) to ease the build and start of containers.
+The `docker-compose.yml` file is composed of services, where each service is
 targeted for each robot platform.
 
 This project uses **Docker Compose** to simplify building and running containers for different robot platforms.
@@ -10,7 +10,7 @@ The main configuration file is `docker-compose.yml`, which defines a separate **
 
 !!! note
 
-    Currently, only the **Tello** robot platform is supported.
+    Currently, only the **Tello** and **Spot** robot platforms are supported.
 
 ## 🚀 Getting Started
 
@@ -27,11 +27,8 @@ The main configuration file is `docker-compose.yml`, which defines a separate **
 !!! info
 
     Note that you will need to have `docker-compose` installed on your system.
-    You can check if it is installed by running `docker-compose -v`. On ubuntu,
-    you can install it using `sudo apt install docker-compose`
 
-    Make sure you have docker-compose installed.
-    You can check with:
+    You can check with if it is installed with:
 
     ```bash
     docker-compose -v
@@ -45,35 +42,49 @@ The main configuration file is `docker-compose.yml`, which defines a separate **
 
 **Steps**:
 
-1. Open a terminal and navigate to the root directory of the project.
+1.  Open a terminal and navigate to the root directory of the project.
 
-1. Run the following command (replace <robot_platform> with the desired platform):
-   docker compose up <robot_platform>\_suite
+1.  Run the following command :
+    ```bash
+    docker compose up <robot_platform>_suite
+    ```
+    Don't forget to replace `<robot_platform>` with the desired platform !
 
 **Available Platforms**
+
+Currently, dedicated Docker services (and corresponding containers) are available only for **tello** and **spot**.
 
 - **tello**:
     ```bash
     docker compose up tello_suite
     ```
+- **spot**:
+
+    ```bash
+    docker compose up spot_suite
+    ```
+
+    This should automatically start a container and launch the driver, plugins and behaviour tree for the corresponding robot platform.
 
 ### Manual Docker Usage (Advanced)
 
 If you prefer not to use Docker Compose, you can build and run the containers manually.
 
-Each robot platform has its own `Dockerfile` located at: `docker/<robot_platform>/Dockerfile`
+Each robot platform has its own `Dockerfile` located at:  
+`docker/<robot_platform>/Dockerfile`
 
 !!! tip
 
-    Replace <robot_platform> with one of the supported platforms:
+    Do not forget to replace `<robot_platform>`  with one of the supported platforms:
 
     - tello
+    - spot
 
 **Steps**:
 
-- Go to the root of the project.
+1. Go to the root of the project.
 
-- Build the Docker image:
+1. Build the Docker image:
 
 ```bash
 docker build -t <robot_platform>_suite -f docker/<robot_platform>/Dockerfile .
@@ -84,10 +95,13 @@ docker build -t <robot_platform>_suite -f docker/<robot_platform>/Dockerfile .
 ```bash
 docker run --rm -it \
     -v /tmp/.X11-unix:/tmp/.X11-unix \
+    -v /dev/dri:/dev/dri \
     -e DISPLAY=$DISPLAY \
+    -e LIBGL_ALWAYS_SOFTWARE=1 \
+    --device /dev/snd:/dev/snd \
     --net=host \
     <robot_platform>_suite \
-    ros2 launch <robot_package> system_launch.py
+    ros2 launch robot_bringup <robot_platform>_launch.py
 ```
 
 - Or start the container with a terminal session:
@@ -95,7 +109,10 @@ docker run --rm -it \
 ```bash
 docker run --rm -it \
     -v /tmp/.X11-unix:/tmp/.X11-unix \
+    -v /dev/dri:/dev/dri \
     -e DISPLAY=$DISPLAY \
+    -e LIBGL_ALWAYS_SOFTWARE=1 \
+    --device /dev/snd:/dev/snd \
     --net=host \
     <robot_platform>_suite \
 ```
@@ -112,8 +129,11 @@ docker run --rm -it \
     # Step 3: Launch the system inside the container
     docker run --rm -it \
         -v /tmp/.X11-unix:/tmp/.X11-unix \
+        -v /dev/dri:/dev/dri \
         -e DISPLAY=$DISPLAY \
+        -e LIBGL_ALWAYS_SOFTWARE=1 \
+        --device /dev/snd:/dev/snd \
         --net=host \
         tello_suite \
-        ros2 launch tello_bringup system_launch.py
+        ros2 launch robot_bringup tello_launch.py
     ```

@@ -9,7 +9,7 @@ To start contributing, first fork the repository:
 1. Visit the project repository on GitHub.
 2. Click the **Fork** button in the top-right corner of the page. Refer to the example screenshot below:
 
-    ![fork button example](./assets/fork-example.png)
+    ![fork button example](../assets/fork-example.png)
 
 This will create a copy of the repository under your GitHub account.
 
@@ -19,21 +19,21 @@ Once you've forked the repository, clone it to your local machine:
 
 ```bash
 # Replace 'username' with your GitHub username
-git clone git@github.com:username/tello_suite.git
+git clone git@github.com:username/robot_suite.git
 ```
 
 This will download the repository to your local system.
 
 ## Setting Up a New Branch
 
-Before starting work on a new feature or bug fix, create a new branch to keep your changes organized. Use a descriptive branch name based on the work you’re doing. For example, if you’re adding a new plugin for interacting with a large language model (LLM), you might use a branch name like `feat/llm_plugin`.
+Before starting to work on a new feature or bug fix, create a new branch to keep your changes organized. Use a descriptive branch name based on the work you’re doing. For example, if you’re adding a new plugin for interacting with a large language model (LLM), you might use a branch name like `feat/llm_plugin`.
 
 ### Workflow Example
 
 Here’s an example of a typical workflow:
 
 ```bash
-cd tello_suite
+cd robot_suite
 
 git checkout -b feat/llm_plugin # Create and switch to a new branch
 
