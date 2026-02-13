@@ -309,6 +309,10 @@ class VoiceInOut(Node):
                     self.pause_listening()
                 self.get_logger().debug(f"Now speaking at {self.get_clock().now()}.")
 
+                if text.strip() == "":
+                    self.get_logger().debug("Not speaking. The LLM's response is empty")
+                    return
+
                 for chunk in self.tts_voice.synthesize(
                     text, syn_config=self.syn_config
                 ):

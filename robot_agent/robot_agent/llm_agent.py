@@ -1,4 +1,5 @@
 import os
+import importlib
 from dotenv import load_dotenv
 
 from langchain_openai import ChatOpenAI
@@ -23,12 +24,11 @@ import threading
 from colorama import Fore, Style, init
 import logging
 
-from robot_agent.spot_controller import SpotController
-from robot_agent.tello_controller import TelloController
-
+from robot_agent.controller import Controller
 from robot_agent.voice_input_output import VoiceInOut
 
 from robot_agent.text_input import TextInput
+from wandb import agent
 
 
 init(autoreset=True)
@@ -60,8 +60,10 @@ class Agent(Node):
     llm_response_topic = "/llm_response"
     change_robot_topic = "/change_robot_name"
 
-    def __init__(self, robot_node: Node, robot_name: str, voice_node: Node = None):
+    def __init__(self, voice_node: Node = None):
         super().__init__("RoboticAgent")
+
+        self.agent_tools = self._get_agent_tools()
 
         self.llm_model = None
         self._init_model()
@@ -72,7 +74,12 @@ class Agent(Node):
 
         self.robots = dict()
 
-        self.rosa = None
+        self.rosa = ROSA(
+            ros_version=2,
+            llm=self.llm_model,
+            streaming=True,
+            tools=self.agent_tools,
+        )
 
         self.chat_history = ChatMessageHistory(messages=[])
 
@@ -85,9 +92,9 @@ class Agent(Node):
         )
         self.event_loop_thread.start()
 
-        self.add_robot(robot_node, robot_name)
+        # self.add_robot(robot_node, robot_name)
         # to set the current robot, make sure that the llm model was already initialized
-        self.set_current_robot(robot_name)
+        # self.set_current_robot(robot_name)
 
         self.voice_node = voice_node
 
@@ -195,17 +202,18 @@ class Agent(Node):
                 max_retries=2,
             )
 
-    def add_robot(self, node: Node, robot_name: str):
+    def add_robot(self, robot_controller: Controller, robot_name: str):
 
         if robot_name not in self.robots:
             robot_dict = dict()
-            robot_dict["robot_tools"] = node.get_tools()
-            robot_dict["robot_prompts"] = node.get_prompts()
+            robot_dict["robot_tools"] = robot_controller.get_tools()
+            robot_dict["robot_prompts"] = robot_controller.get_prompts()
+            robot_dict["robot_controller_node"] = robot_controller
             self.robots[robot_name] = robot_dict
         else:
 
             self.get_logger().warn(
-                f"Robot already exists in our dictionnary: {self.robots}"
+                f"Robot already exists in our list of known robots: {list(self.robots)}"
             )
 
     def remove_robot(self, robot_name):
@@ -214,12 +222,21 @@ class Agent(Node):
 
             if self.current_robot_name == robot_name:
                 self.current_robot_name = None
-                self.rosa = None
+                self.rosa = ROSA(
+                    ros_version=2,
+                    llm=self.llm_model,
+                    streaming=True,
+                    tools=self.agent_tools,
+                )
+
+                return "Done! The robot removed was the current robot. So the user should set the current robot to another robot."
+            return "Done, the robot was removed from known robots."
 
         else:
             self.get_logger().warn(
-                f"Robot doesn't exist in our dictionnary: {self.robots}"
+                f"Robot doesn't exist in our list of known robots: {list(self.robots.keys())}"
             )
+            return f"Robot doesn't exist in our list of known robots: {list(self.robots.keys())}"
 
     def set_current_robot(self, robot_name):
         if robot_name in self.robots:
@@ -228,14 +245,17 @@ class Agent(Node):
                 ros_version=2,
                 llm=self.llm_model,
                 streaming=True,
-                tools=self.robots[robot_name]["robot_tools"],
+                tools=self.robots[robot_name]["robot_tools"] + self.agent_tools,
                 prompts=self.robots[robot_name]["robot_prompts"],
             )
 
+            return f"The current robot is now {self.current_robot_name}"
+
         else:
-            self.get_logger().warn(
+            self.get_logger().error(
                 f"Robot {robot_name} doesn't exist. Make sure to add {robot_name} first."
             )
+            return f"Robot {robot_name} doesn't exist. Make sure to add {robot_name} first."
 
     ########################################## Subscriber callback ############################################################################
     def user_query_callback(self, msg) -> None:
@@ -244,44 +264,87 @@ class Agent(Node):
         self.user_query = msg.data
         self.chat_history.add_user_message(self.user_query)
 
-        if self.current_robot_name:
+        if self.rosa is not None:
             asyncio.run_coroutine_threadsafe(self.send_query(msg.data), self.event_loop)
 
-        else:
-            self.get_logger().debug(
-                "Got a query, but the current agent is not yet initialized"
+        if self.current_robot_name is None:
+            self.get_logger().warn(
+                f'\033[33m Received this user query : "\033[94m \033[1m {self.user_query} \033[22m \033[33m", \n but the current robot is not yet initialized'
+                f"\nThe list of available robots is {list(self.robots)}."
+                f"\nYou can set the current robot to one of these to proceed.\n"
             )
+
+    def change_current_robot(self, new_robot_name) -> None:
+        """Method to change the current robot to another robot (new_robot_name).
+        If the current robot is not defined, it simply sets the current robot to the new robot.
+        """
+        if new_robot_name in self.robots:
+            if (
+                self.current_robot_name is None
+                or new_robot_name != self.current_robot_name
+            ):
+                self.set_current_robot(new_robot_name)
+                self.get_logger().debug(f"Switched to robot: {new_robot_name}")
+
+                return f"Switched to robot: {new_robot_name}"
+            else:
+                self.get_logger().info(f"Already using robot: {new_robot_name}")
+
+                return f"The current robot was already: {new_robot_name}"
+
+        else:
+            self.get_logger().warn(
+                f"Robot '{new_robot_name}' not found. Available robots: {list(self.robots.keys())}"
+            )
+
+            return f"Robot '{new_robot_name}' not found. Known robots are: {list(self.robots.keys())}. the user should choose from that list."
 
     def change_robot_callback(self, msg) -> None:
         """Callback for the subscriber node (to topic self.change_robot_topic).
-        Receives the name of the robot to switch to."""
+        Receives the name of the robot to switch to.
+        """
         new_robot_name = msg.data.strip()
-        if new_robot_name != self.current_robot_name:
-            if new_robot_name in self.robots:
-                self.set_current_robot(new_robot_name)
-                self.get_logger().debug(f"Switched to robot: {new_robot_name}")
-            else:
+
+        self.change_current_robot(new_robot_name)
+
+    def load_robots(self):
+        """Method to load all available robot controllers and pass them to our agent"""
+        robots_loaded = []
+        robots_not_loaded = []
+        controllers_module = importlib.import_module(".controllers", __package__)
+        for robot in controllers_module.__all__:
+            try:
+                robot_cls = getattr(controllers_module, robot)
+                robot_controller_node = robot_cls()
+                if isinstance(robot_controller_node, Controller):
+                    self.add_robot(
+                        robot_controller_node, robot_controller_node.robot_name
+                    )
+                    robots_loaded.append(robot_controller_node.robot_name)
+
+            except Exception as e:
                 self.get_logger().warn(
-                    f"Robot '{new_robot_name}' not found. Available robots: {list(self.robots.keys())}"
+                    f"An error occured while trying to load {robot}: {e}"
                 )
-        else:
-            self.get_logger().info(f"Already using robot: {new_robot_name}")
+                robots_not_loaded.append(robot)
+
+        return f"Robots loaded: {robots_loaded}, Robots not loaded: {robots_not_loaded}"
 
     def stop_tts_callback(self, request, response):
         """Callback method to stop Piper TTS when requested via service"""
         # Set the flag to False to stop Piper TTS
         try:
-            if self.voice_node is not None:
-                self.voice_node.stop_tts = True
-                self.get_logger().debug("stop_tts set to True")
-                response.success = True
-                return response
-            else:
-                raise Exception("Voice node is not initialized.")
+            self.try_stop_tts()
+            response.success = True
+            return response
         except Exception as e:
             self.get_logger().error(f"An error occurred while trying to stop TTS: {e}")
             response.success = False
             return response
+
+    def try_stop_tts(self):
+        self.voice_node.stop_tts = True
+        self.get_logger().debug("stop_tts set to True")
 
     ########################################## Query handling ############################################################################
     async def get_response(self, query: str):
@@ -324,15 +387,97 @@ class Agent(Node):
         processing_time_str = time.strftime("%H:%M:%S")
         print(Fore.CYAN + f"[{processing_time_str}] Processing command...")
 
-        response = await self.get_response(query)
-        self.chat_history.add_ai_message(response)
+        try:
+            if self.rosa is not None:
+                response = await self.get_response(query)
+                self.chat_history.add_ai_message(response)
 
-        responseMsg = String()
-        responseMsg.data = response
-        self.llm_response_pub.publish(responseMsg)
+                responseMsg = String()
+                responseMsg.data = response
+                self.llm_response_pub.publish(responseMsg)
 
-        processing_time_str = time.strftime("%H:%M:%S")
-        print(Fore.CYAN + f"[{processing_time_str}] Response received...")
+                processing_time_str = time.strftime("%H:%M:%S")
+                print(Fore.CYAN + f"[{processing_time_str}] Response received...")
+            else:
+                raise Exception(
+                    "ROSA is None. Make sure that the current robot is defined."
+                )
+        except Exception as e:
+            self.get_logger().error(
+                f"An exception occured when sending the user's query to the ROSA : {e}"
+            )
+
+    ##################################### LLM Agent tools ########################################################################
+    # These are tools for handling which robot the agent is impersonating
+    def _get_agent_tools(self):
+
+        @tool
+        def get_current_robot():
+            """Tool to get the name of the current robot that the agent is impersonating."""
+            if self.current_robot_name is not None:
+                return self.current_robot_name
+            else:
+                return "The current robot is not yet defined"
+
+        @tool
+        def get_available_robots():
+            """Tool to get the list of available/known robots that the agent can impersonate.
+            This returns the list of robots names. Use it only when you need to know the list of available robot names.
+            """
+            return "The known robots are: " + str(list(self.robots.keys()))
+
+        @tool
+        def change_current_robot(new_robot_name):
+            """Tool to change the current robot that the agent is impersonating to another robot from the list of available robots.
+            Based on the robot provided as input, you should pass the correct robot name to this tool to change the current robot to that robot.
+            The list of available robots can be retrieved using the tool `get_available_robots()`.
+
+            :param new_robot_name: the name of the robot to change to. It is a Python string.
+            """
+            return self.set_current_robot(new_robot_name)
+
+        @tool
+        def load_robot_controllers():
+            """
+            This tool loads all the available robot controllers and adds them to the agent's list of known robots.
+            This will load the robots even if they were already loaded before.
+            This tool is not working properly yet. Use with caution!
+            """
+            ## This tool is not working properly yet. Use with caution!
+            return self.load_robots()
+
+        @tool
+        def remove_robot_controller(robot_name):
+            """
+            Tool to remove a robot controller from the agent's list of known robots.
+            If the removed robot was the current robot, the current robot will be set to None and the user should be asked to set the current robot to another robot from the list of known robots.
+            Based on the robot provided as input, you should pass the correct robot name to this tool to remove that robot from the list of known robots.
+            The list of known robots can be retrieved using the tool `get_available_robots()`.
+
+            :param robot_name: the name of the robot to remove from the list of known robots. It is a Python string.
+            """
+            return self.remove_robot(robot_name)
+
+        @tool
+        def stop_tts():
+            """Tool to stop audio reading of your response.
+            This is useful in case the user wants to interrupt TTS.
+            When using this tool, make sure to return an empty response to the user, that is, always answer with an empty string.
+            """
+            try:
+                self.try_stop_tts()
+                return "The TTS should stop soon. But don't tell the user. Answer with an empty string."
+            except Exception as e:
+                return f"We couldn't stop TTS because an error occured: {e}"
+
+        return [
+            get_current_robot,
+            get_available_robots,
+            change_current_robot,
+            load_robot_controllers,
+            remove_robot_controller,
+            stop_tts,
+        ]
 
 
 # ROS init and run
@@ -348,22 +493,14 @@ def main(args=None):
     text_thread = threading.Thread(target=text_input_node.get_query)
     text_thread.start()
 
-    # Robot setting up
-    spot = SpotController("spot")
-    tello = TelloController("tello")
-
-    agent = Agent(tello, tello.robot_name, voice_io)
-    agent.add_robot(spot, spot.robot_name)
-
-    # agent.set_current_robot(tello.robot_name)
-
+    agent = Agent(voice_io)
     # Use executor in a separate thread
     executor = MultiThreadedExecutor()
-    executor.add_node(agent)
+    agent.load_robots()
 
-    # Spin also the spot and tello controllers.
-    executor.add_node(tello)
-    executor.add_node(spot)
+    executor.add_node(agent)
+    for robot_name in agent.robots:
+        executor.add_node(agent.robots[robot_name]["robot_controller_node"])
 
     # Text input
     executor.add_node(text_input_node)
@@ -378,12 +515,11 @@ def main(args=None):
     spin_thread.join()
 
     executor.shutdown()
-
     agent.destroy_node()
-    # spot.destroy_node()
     text_input_node.destroy_node()
-    tello.destroy_node()
     voice_io.destroy_node()
+    for robot_name in agent.robots:
+        agent.robots[robot_name]["robot_controller_node"].destroy_node()
     rclpy.shutdown()
 
 
