@@ -1,4 +1,4 @@
-# How to add a robot?
+# How to add a robot to the robot_suite?
 
 At the moment, the `robot_suite` supports the following platforms:
 

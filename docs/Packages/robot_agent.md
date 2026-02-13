@@ -95,10 +95,12 @@ ros2 run robot_agent robot_agent_node
 
 ## Adding a robot controller
 
-In case you have a new robot platform you will want the robot agent to support, you need to define a controller for that robot.
-To add a new robot, you will have to add a set of tools for interacting with that robot. That is, you have to write a custom `robot controller.py` script for that robot. Inside the robot controller script, you will have to provide the set of tools to interact with the robot along with the prompts for the agent.
+In case you have a new robot platform you will want the robot AI agent to support, you need to define a controller for that robot.
+To add a new robot, follow these steps:
 
-!!! Example
+1. First, you will have to add a set of tools for interacting with that robot. That is, you have to write a custom `<robot>_controller.py` script for that robot. Inside the robot controller script, you will have to provide the set of tools to interact with the robot along with the prompts for the agent.
+
+!!! Example "Simple Example"
 
     ```python
     from rosa import RobotSystemPrompts
@@ -148,7 +150,6 @@ To add a new robot, you will have to add a set of tools for interacting with tha
                 """
                 return self.get_battery_level()
 
-
             @tool
             def move(x, y):
                 """
@@ -174,8 +175,22 @@ To add a new robot, you will have to add a set of tools for interacting with tha
 
     ```
 
-To use the new robot controller, you will have to pass it to the llm agent. Please refer to the code below.
+2.  Once you are done with the robot controller script, you will have to add your script inside the `controllers` folder of the `robot_agent` package, ie, at `robot_suite/robot_agent/robot_agent/controllers`
+3.  Finally, you need to add your new robot controller class in the \***\*init**.py\*\* file of the controllers folder.
+
+!!! Example
+
+    ```python title="robot_suite/robot_agent/robot_agent/controllers/__init__.py"
+
+    from .spot_controller import SpotController
+    from .tello_controller import TelloController
+    from .<robot_controller> import <RobotController>  # Added line
+
+    __all__ = ["SpotController", "TelloController", "<RobotController>"] # Added "<RobotController>"
+    ```
 
 !!! Note
 
-    To be done. Provide a simple command!
+    Don't forget to replace `<robot_controller>` and `<RobotController>` with the actual names of your new robot controller script and controller class respectively.
+
+Once you do this, you should be able to use the robot agent with the new robot (with proper build and sourcing of the workspace).

@@ -13,10 +13,10 @@ In the future, the selection of which plugin to run can be configured using a be
 
 ## How To Create a Plugin
 
-As mentioned, a plugin is just a ROS2 package. You can create a new package under the `plugins` folder or import your own pre-existing package.
+As mentioned, a plugin is just a ROS2 package. You can create a new package under the `robot_plugins` folder or import your own pre-existing package.
 
-When developing your plugin, you need to use the [plugin_base](./1.plugin_base.md) package. This package provides a base class (`PluginNode`) for implementing plugins.
-Check the [Getting Started Section](./1.plugin_base.md#getting-started) for more details on how to use it.
+When developing your plugin, you need to use the [plugin_base](../Plugins/plugin_base.md) package. This package provides a base class (`PluginNode`) for implementing plugins.
+Check the [Getting Started Section](../Plugins/plugin_base.md#getting-started) for more details on how to use it.
 
 ## Frequently Asked Questions
 
