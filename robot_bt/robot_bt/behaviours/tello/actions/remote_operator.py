@@ -23,9 +23,11 @@ class RemoteOperator(Action):
 
     def update(self) -> py_trees.common.Status:
         for key in self.key_pressed.split():
-            if key == "m":
+            if key == "m" or key == "s":  # m for manual control, s for stop tracking
                 self.blackboard.selected_plugin = ""
             elif key == "h":
                 self.blackboard.selected_plugin = "landmark_detector_node"
+            elif key == "t":
+                self.blackboard.selected_plugin = "person_tracking"
 
         return py_trees.common.Status.SUCCESS

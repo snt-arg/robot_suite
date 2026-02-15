@@ -25,6 +25,12 @@ class GesturesInterpreterAction(Action):
     max_lin_speed: float = 0.3
     max_ang_speed: float = 1.0
 
+    def __init__(self, name, bt_node, filter_mode):
+        super().__init__(name, bt_node)
+        self.landmarks_topic = (
+            "/hand/landmarks" if filter_mode == False else "/hand/landmarks_from_pilot"
+        )
+
     def setup(self) -> None:  # type: ignore
         self.land_pub = self.node.create_publisher(Empty, self.land_topic, 1)
         self.takeoff_pub = self.node.create_publisher(Empty, self.takeoff_topic, 1)
