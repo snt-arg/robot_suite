@@ -234,7 +234,7 @@ function spot_install(){
     git clone --recurse-submodules https://github.com/bdaiinstitute/bosdyn_msgs.git
     git -C bosdyn_msgs checkout 209454f # need this version to be compatible with spot-cpp-sdk 5.1.0, while waiting for jazzy support in the official repo
     git -C bosdyn_msgs submodule update --init --recursive
-    git -C bosdyn_msgs/proto2ros checkout 0cc2471 # need this to be compatiblle with bosdyn_msgs version above
+    git -C bosdyn_msgs/proto2ros checkout 0cc2471 # need this to be compatible with bosdyn_msgs version above
     
     PIP_CONSTRAINT=./bosdyn_msgs/pip-constraint.txt rosdep install -i -y --from-path ../ --skip-keys "$(cat ./bosdyn_msgs/rosdep-skip.txt)"
     

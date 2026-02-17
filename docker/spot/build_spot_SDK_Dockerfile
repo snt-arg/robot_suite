@@ -36,7 +36,7 @@ RUN bash <<EOF
     cd ..
     
     
-    git clone https://github.com/maeri18/spot-cpp-sdk.git
+    git clone https://github.com/maeri18/spot-cpp-sdk-jazzy.git spot-cpp-sdk
     
     cd spot-cpp-sdk/
   

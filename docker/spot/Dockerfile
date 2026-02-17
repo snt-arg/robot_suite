@@ -1,4 +1,4 @@
-FROM maeri18/spot_sdk_jazzy:5.1.0-vcpkg
+FROM spot_sdk_jazzy:5.0.1
 
 # Set this in the compose file instead
 # ENV RMW_IMPLEMENTATION=rmw_cyclonedds_cpp 

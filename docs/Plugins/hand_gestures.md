@@ -80,9 +80,3 @@ The landmark annotator node is responsible for drawing the detected landmarks on
 | `img_input_topic`     | Input image topic name.                    | `/camera/image_raw` |
 | `annotated_img_topic` | Annotated image with landmarks topic name. | `/camera/image_raw` |
 | `landmarks_topic`     | Detected landmarks on image.               | `hand/landmarks`    |
-
-### Use case example
-
-!!! Note
-
-    To be done!
