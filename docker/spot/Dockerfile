@@ -1,4 +1,5 @@
-FROM spot_sdk_jazzy:5.0.1
+FROM ros:jazzy 
+# spot_sdk_jazzy:5.0.1
 
 # Set this in the compose file instead
 # ENV RMW_IMPLEMENTATION=rmw_cyclonedds_cpp 
@@ -21,8 +22,7 @@ RUN apt update && \
 # Copy Robot Suite
 COPY . /workspace/robot_suite
 
-ARG IN_DOCKER=1
-ENV IN_DOCKER=$IN_DOCKER
+ENV PIP_BREAK_SYSTEM_PACKAGES=1
 WORKDIR /workspace/robot_suite
 SHELL ["/bin/bash", "-c"]
 RUN ./bootstrap.sh spot

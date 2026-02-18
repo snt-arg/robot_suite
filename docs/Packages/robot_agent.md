@@ -225,3 +225,14 @@ To add a new robot, follow these steps:
     Don't forget to replace `<robot_controller>` and `<RobotController>` with the actual names of your new robot controller script and controller class respectively.
 
 Once you do this, you should be able to use the robot agent with the new robot (with proper build and sourcing of the workspace).
+
+## Troubleshooting
+
+It might happen that you encounter this error stating `invalid sample rate`.
+
+In such case, you can reload the alsa drivers and start the `robot agent` again. From the host (not inside a docker container), run:
+
+```bash
+
+    sudo alsa force-reload
+```

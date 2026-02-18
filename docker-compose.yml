@@ -7,11 +7,9 @@ services:
             dockerfile: ./docker/tello/Dockerfile
         environment:
             - DISPLAY=${DISPLAY}
-            # - LIBGL_ALWAYS_SOFTWARE=1
             #- RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
         volumes:
             - /tmp/.X11-unix:/tmp/.X11-unix
-            #- /dev/dri:/dev/dri  # for hardware acceleration
         devices:
             - /dev/snd:/dev/snd # for audio access
         network_mode: "host"

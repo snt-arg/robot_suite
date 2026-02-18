@@ -1,4 +1,4 @@
-import os
+import pkgutil, inspect
 import importlib
 from dotenv import load_dotenv
 
@@ -28,7 +28,6 @@ from robot_agent.controller import Controller
 from robot_agent.voice_input_output import VoiceInOut
 
 from robot_agent.text_input import TextInput
-from wandb import agent
 
 
 init(autoreset=True)
@@ -310,25 +309,36 @@ class Agent(Node):
     def load_robots(self):
         """Method to load all available robot controllers and pass them to our agent"""
         robots_loaded = []
-        robots_not_loaded = []
+        robot_files_not_loaded = []
+
         controllers_module = importlib.import_module(".controllers", __package__)
-        for robot in controllers_module.__all__:
+        for p in pkgutil.iter_modules(controllers_module.__path__):
+            robot_controller_file_name = p[1]
             try:
-                robot_cls = getattr(controllers_module, robot)
-                robot_controller_node = robot_cls()
-                if isinstance(robot_controller_node, Controller):
-                    self.add_robot(
-                        robot_controller_node, robot_controller_node.robot_name
-                    )
-                    robots_loaded.append(robot_controller_node.robot_name)
+                robot_controller_file = importlib.import_module(
+                    ".controllers." + robot_controller_file_name, __package__
+                )
+                for _, robot_controller_cls in inspect.getmembers(
+                    robot_controller_file, inspect.isclass
+                ):
+                    if (
+                        robot_controller_cls.__module__
+                        == robot_controller_file.__name__
+                        and issubclass(robot_controller_cls, Controller)
+                    ):
+                        robot_controller_node = robot_controller_cls()
+                        self.add_robot(
+                            robot_controller_node, robot_controller_node.robot_name
+                        )
+                        robots_loaded.append(robot_controller_node.robot_name)
 
             except Exception as e:
                 self.get_logger().warn(
-                    f"An error occured while trying to load {robot}: {e}"
+                    f"An error occured while trying to load {robot_controller_file_name}: {e}"
                 )
-                robots_not_loaded.append(robot)
+            robot_files_not_loaded.append(robot_controller_file_name)
 
-        return f"Robots loaded: {robots_loaded}, Robots not loaded: {robots_not_loaded}"
+        return f"Robots loaded: {robots_loaded}, files that couldn't be loaded: {robot_files_not_loaded}"
 
     def stop_tts_callback(self, request, response):
         """Callback method to stop Piper TTS when requested via service"""
