@@ -571,7 +571,7 @@ class SpotController(Controller):
             + tracking_info_str
         )
 
-    def sit(self) -> str:
+    async def sit(self) -> str:
         # time stamp
         time_str = datetime.now().strftime("%H:%M:%S:%f")
         print(Fore.CYAN + f"[{time_str}] Start sit time..")
@@ -581,9 +581,9 @@ class SpotController(Controller):
         if self.feedback is not None:
             sitting: bool = self.feedback.sitting
 
-        if sitting:
+        if sitting is not None:
             try:
-                self.call_sit_service()
+                await self.call_sit_service()
 
                 # time stamp
                 time_str = datetime.now().strftime("%H:%M:%S:%f")
@@ -595,7 +595,7 @@ class SpotController(Controller):
         else:
             return f"Robot state (sitting/standing) is not yet known. Cannot sit."
 
-    def stand(self) -> str:
+    async def stand(self) -> str:
         # time stamp
         time_str = datetime.now().strftime("%H:%M:%S:%f")
         print(Fore.CYAN + f"[{time_str}] Start stand tool time..")
@@ -605,9 +605,9 @@ class SpotController(Controller):
         if self.feedback is not None:
             standing: bool = self.feedback.standing
 
-        if standing:
+        if standing is not None:
             try:
-                self.call_stand_service()
+                await self.call_stand_service()
 
                 time_str = datetime.now().strftime("%H:%M:%S:%f")
                 print(Fore.CYAN + f"[{time_str}] End stand tool time..")
@@ -645,14 +645,14 @@ class SpotController(Controller):
                 msg_twist.linear.z = linear_z
                 msg_twist.angular.z = float(angular)
 
-                print(
-                    f"DEBUG: LLM called move() with linear={linear}, angular={angular}, duration={duration}s"
-                )
+                #print(
+                #    f"DEBUG: LLM called move() with linear={linear}, angular={angular}, duration={duration}s"
+                #)
 
                 t0 = self.get_clock().now().nanoseconds
 
                 while (self.get_clock().now().nanoseconds - t0) / 1e9 <= duration:
-                    print((self.get_clock().now().nanoseconds - t0) / 1e9)
+                    #print((self.get_clock().now().nanoseconds - t0) / 1e9)
 
                     self.commands_pub.publish(msg_twist)
 
@@ -929,20 +929,22 @@ class SpotController(Controller):
             return self.get_general_status()
 
         @tool
-        def sit():
+        async def sit():
             """Command the robot dog to sit and transition from a standing position (on 4 legs) to a sitting position.
             It cannot be used if the robot is already on the sitting. To know whether or not the robot is sitting, first get the status of the robot.
             """
-            return self.sit()
+            response = await self.sit()
+            return response
 
         @tool
-        def stand():
+        async def stand():
             """Command the robot to stand and transition from a sitting position to a standing position.
             It cannot be used if the robot is already standing.  To know whether or not the robot is sitting, first get the status of the robot.
             Do not attempt to stand the robot if the battery level is below 20% or if the robot is standing. In such cases, return an appropriate message.
             To have the battery level, use the get_battery_status() tool.
             """
-            return self.stand()
+            response = await self.stand()
+            return response
 
         @tool
         def move(linear, angular, duration):

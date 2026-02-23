@@ -420,8 +420,8 @@ class TelloController(Controller):
 
         if battery_level is None:
             return "Battery level is unknown. Cannot perform flip."
-        if battery_level < 30.0:
-            return f"Battery too low ({battery_level:.2f}%). Flip maneuver is disabled. (Requires >30%)"
+        if battery_level < 50.0:
+            return f"Battery too low ({battery_level:.2f}%). Flip maneuver is disabled. (Requires >50%)"
 
         if current_em_sky == 1 and (current_fly_mode == 6 or current_fly_mode == 31):
             pass
@@ -704,7 +704,7 @@ class TelloController(Controller):
             "It is very important that you always use the available tools."
             "Be concise and clear in your answers."
             "Do not repeat yourself. try to summarize whenever possible in your answers, but be careful about not loosing important informations. give only the most important one"
-            "when possible, try to formulate only one sentence, but be careful to not put false imformations."
+            "when possible, try to formulate only one sentence, but be careful to not put false informations."
             "do not use unecessary long words, use simple and clear ones"
             "never repeat yourself and avoid putting obvious informations. dont explain yourself too much. only give one answer, not multiple ones."
             "it is really important that you never ever repeat a sentence that you already said in your previous answers, even when if it is in another formulation. keep your anwers really short"
@@ -780,7 +780,7 @@ class TelloController(Controller):
 
         @tool
         def get_battery_level():
-            """Gets the current battery level of the robot."""
+            """Gets the current battery level of the drone."""
             return self.get_battery_level()
 
         @tool
@@ -829,14 +829,14 @@ class TelloController(Controller):
 
         @tool
         def throw_and_go():
-            """Command the robot to perform a throw takeoff. The drone must be on the hands of the user
+            """Command the drone to perform a throw takeoff. The drone must be on the hands of the user
                 and then physically thrown within a 5-secon
             export function VideoContd arming window to initiate flight."""
             return self.throw_and_go()
 
         @tool
         def palm_land():
-            """Command the robot to land on an open palm. The drone must be in the air and will descend to land on a detected hand when one is presented below it."""
+            """Command the drone to land on an open palm. The drone must be in the air and will descend to land on a detected hand when one is presented below it."""
             return self.palm_land()
 
         return [
