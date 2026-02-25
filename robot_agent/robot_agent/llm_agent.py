@@ -307,7 +307,9 @@ class Agent(Node):
         self.change_current_robot(new_robot_name)
 
     def load_robots(self):
-        """Method to load all available robot controllers and pass them to our agent"""
+        """Method to load all available robot controllers and pass them to our agent.
+        Robot controllers should be located inside the "controllers" folder of this package to be loaded
+        """
         robots_loaded = []
         robot_files_not_loaded = []
 

@@ -645,14 +645,14 @@ class SpotController(Controller):
                 msg_twist.linear.z = linear_z
                 msg_twist.angular.z = float(angular)
 
-                #print(
+                # print(
                 #    f"DEBUG: LLM called move() with linear={linear}, angular={angular}, duration={duration}s"
-                #)
+                # )
 
                 t0 = self.get_clock().now().nanoseconds
 
                 while (self.get_clock().now().nanoseconds - t0) / 1e9 <= duration:
-                    #print((self.get_clock().now().nanoseconds - t0) / 1e9)
+                    # print((self.get_clock().now().nanoseconds - t0) / 1e9)
 
                     self.commands_pub.publish(msg_twist)
 
@@ -956,14 +956,12 @@ class SpotController(Controller):
             - x-axis: +x is forward, -x is backward.
             - y-axis: +y is left, -y is right.
             - z-axis: +z is up, -z is down.
-            - angular z-axis: +z is counter-clockwise turn (left), -z is clockwise turn (right).
 
             To perform this movement, the robot dog must be in the standing.
             The user may specify a speed (e.g., "velocity 1m/s", "go slowly"). If a speed is provided, use it to set the magnitude of the linear or angular velocity vector. If no speed is specified, use a default of 1 m/s or -1 m/s.
             If the user does not specify a time, assume a default duration of 1 second.
 
             :param linear: A list of 3 floats representing [x, y, z] velocity in m/s. This vector should be constructed based on the user's direction and specified speed.
-                        For example, if the user says "go right at 1.2 m/s", the vector should be [0.0, -1.2, 0.0].
             :param angular: A float for z-axis angular velocity (rotation).
             :param duration: Duration of the movement in seconds.
 
