@@ -626,8 +626,10 @@ class SpotController(Controller):
         standing = None
 
         ### Test
-        print(f"DEBUG: LLM called move() with linear={linear}, angular={angular}, duration={duration}s")
-        directions:str = []
+        print(
+            f"DEBUG: LLM called move() with linear={linear}, angular={angular}, duration={duration}s"
+        )
+        directions: str = []
         linear_x = float(linear[0])
         linear_y = float(linear[1])
         if linear_x > 0:
@@ -657,7 +659,7 @@ class SpotController(Controller):
                 msg_twist = Twist()
                 linear_x = float(linear[0])
                 linear_y = float(linear[1])
-      
+
                 msg_twist.linear.x = linear_x
                 msg_twist.linear.y = linear_y
                 msg_twist.angular.z = float(angular)
@@ -832,7 +834,7 @@ class SpotController(Controller):
     ############################################# Getters #########################################################################
     def get_prompts(self):
         prompts = RobotSystemPrompts(
-            embodiment_and_persona="You are a robotic agent managing a robot dog. The robot dog you are operating is Boston dynamics' Spot",
+            embodiment_and_persona="You are a robotic agent managing a robot dog. The robot dog you are operating is Boston dynamics' Spot"
             "You should always use the available tools for these actions: standing, sitting, moving the robot dog and getting the status/battery/mobility metrics of the robot dog."
             "MANDATORY: Always use the tools to provide information or execute actions."
             "If the user asks something you don't know or are unsure, either ask the user to clarify his/her request, or tell him/her that you don't know.",
@@ -950,20 +952,18 @@ class SpotController(Controller):
 
         @tool
         async def sit():
-            """Command the robot dog to sit and transition from a standing position (on 4 legs) to a sitting position.
-            """
+            """Command the robot dog to sit and transition from a standing position (on 4 legs) to a sitting position."""
             response = await self.sit()
             return response
 
         @tool
         async def stand():
-            """Command the robot to stand and transition from a sitting position to a standing position.
-            """
+            """Command the robot to stand and transition from a sitting position to a standing position."""
             response = await self.stand()
             return response
 
         @tool
-        def move(longitudinal,lateral, yaw, duration):
+        def move(longitudinal, lateral, yaw, duration):
             """
              Move the robot dog with specified linear and angular velocities for a given duration. Unless the user's request could not be satisfied, provide an empty answer ''.
 
@@ -975,12 +975,12 @@ class SpotController(Controller):
             If a velocity parameter is 0, there is no movement along that axis.
             If duration is not specified, default to 1 second.
 
-            :param longitudinal: A float specifying the velocity (in m/s) for moving the robot dog forward/backward. if `longitudinal` > 0 the robot moves forward. if  `longitudinal` < 0 the robot dog moves backwards. 
+            :param longitudinal: A float specifying the velocity (in m/s) for moving the robot dog forward/backward. if `longitudinal` > 0 the robot moves forward. if  `longitudinal` < 0 the robot dog moves backwards.
             :param lateral: A float specifying the velocity (in m/s) for moving the robot dog left/right. `lateral` > 0 robot dog moves right. To move the robot dog left, you should have  `lateral` < 0.
             :param yaw: A float for angular velocity (rotation). if `yaw` > 0 then the robot dog will rotate counter-clockwise (left). If `yaw` < 0 then the robot dog will rotate clockwise (right).
             :param duration: Duration of the movement in seconds. The default value should be 1, if the user doesn't specify the duration.
             """
-            return self.move([longitudinal,-lateral], yaw, duration)
+            return self.move([longitudinal, -lateral], yaw, duration)
 
         @tool
         def switch_mode(mode, object_name):
@@ -1033,8 +1033,8 @@ class SpotController(Controller):
             stand,
             sit,
             move,
-            #switch_mode,
-            #start_object_tracking,
-            #stop_object_tracking,
+            # switch_mode,
+            # start_object_tracking,
+            # stop_object_tracking,
             get_wifi_connection_state,
         ]
