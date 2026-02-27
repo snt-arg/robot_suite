@@ -309,7 +309,7 @@ class Agent(Node):
     def load_robots(self):
         """Method to load all available robot controllers and pass them to our agent.
         Robot controllers should be located inside the "controllers" folder of this package to be loaded
-        """
+        """ 
         robots_loaded = []
         robot_files_not_loaded = []
 
@@ -339,6 +339,11 @@ class Agent(Node):
                     f"An error occured while trying to load {robot_controller_file_name}: {e}"
                 )
             robot_files_not_loaded.append(robot_controller_file_name)
+
+        # If there is only one robot controller that we could load, we set to current agent to that robot
+        if len(self.robots) == 1:
+            robot_name = next(iter(self.robots))
+            self.set_current_robot(robot_name)
 
         return f"Robots loaded: {robots_loaded}, files that couldn't be loaded: {robot_files_not_loaded}"
 
@@ -537,3 +542,4 @@ def main(args=None):
 
 if __name__ == "__main__":
     main()
+

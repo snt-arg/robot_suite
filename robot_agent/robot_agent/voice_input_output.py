@@ -38,7 +38,7 @@ class VoiceInOut(Node):
     # Service to request enabling of audio output for responses
     output_audio_service = "/output_audio_service"
 
-    # Audio configuration
+    # Audio output configuration
     format = pyaudio.paInt16
     rate = 22050
     channels = 1
@@ -59,6 +59,8 @@ class VoiceInOut(Node):
         self.user_query_pub = None
 
         # INITIALIZE AUDIO SPEECH RECOGNITION
+        # ---> Pyaudio instance
+        self.pya = pyaudio.PyAudio()
 
         # ---> Initialize variable to decide when to recognize speech
         self.stop_listening = None
@@ -75,13 +77,30 @@ class VoiceInOut(Node):
         )
 
         # ---> Initialize microphone for speech input
-        tmp_mic = sr.Microphone(sample_rate=22050)
+        # checking whether the dji mic mini is available for use
+        mic_index = None
+        mic_sample_rate = 22050
+        for i in range(self.pya.get_device_count()):
+            audio_source_name = self.pya.get_device_info_by_index(i)['name']
+            if re.match(re.compile(r"^DJI\sMIC\sMINI",re.I), audio_source_name):
+                self.get_logger().info(f"\033[95m Detected a Dji mic mini, we will use it.\033[00m")
+                mic_index = i
+                mic_sample_rate = int(self.pya.get_device_info_by_index(i)['defaultSampleRate'])
+
+        # if the dji mic mini is not available, we use the default microphone
+        if mic_index is None:
+            mic_index = self.pya.get_default_input_device_info()['index']
+        # calibrating for ambient noise
+        tmp_mic = sr.Microphone(sample_rate=mic_sample_rate,device_index=mic_index)
+
         with tmp_mic as source:
             self.stt_recognizer.adjust_for_ambient_noise(source, duration=2)
         self.get_logger().debug("Microphone calibrated.")
 
-        self.stt_mic = sr.Microphone(sample_rate=22050)
+        # initializing the microphone object for speech recognition
+        self.stt_mic = sr.Microphone(sample_rate=mic_sample_rate,device_index=mic_index)
 
+        # regular expression to catch common hallucination sentences heard by whisper model.
         self.common_hallucinations = re.compile(
             r"^thanks?\s*(you|u)?\s*(for)?\s*(watching)?\s*(my)?\s*(video)?\s*[.!?\s]*$|^((you)\s*)*$|^(\s*[.?!])*$",
             re.I,
@@ -119,7 +138,6 @@ class VoiceInOut(Node):
         self.stop_tts = False  # variable to stop TTS if needed
 
         # --> Start output audio stream
-        self.pya = pyaudio.PyAudio()
         self.stream = self.pya.open(
             format=self.format, channels=self.channels, rate=self.rate, output=True
         )
@@ -348,3 +366,4 @@ class VoiceInOut(Node):
 
         # Call base class destructor
         super().destroy_node()
+

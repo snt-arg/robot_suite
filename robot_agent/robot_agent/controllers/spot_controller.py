@@ -625,9 +625,28 @@ class SpotController(Controller):
 
         standing = None
 
-        print(
-            f"linear : {type(linear)}, angular={type(angular)}, duration={type(duration)}"
-        )
+        ### Test
+        print(f"DEBUG: LLM called move() with linear={linear}, angular={angular}, duration={duration}s")
+        directions:str = []
+        linear_x = float(linear[0])
+        linear_y = float(linear[1])
+        if linear_x > 0:
+            directions.append("forward")
+        elif linear_x < 0:
+            directions.append("backward")
+
+        if linear_y > 0:
+            directions.append("left")
+        elif linear_y < 0:
+            directions.append("right")
+
+        if angular > 0:
+            directions.append("Rotation to the left")
+        elif angular < 0:
+            directions.append("Rotation to the right")
+
+        print(f"Attempted movement : {directions}")
+        ### End test
 
         if self.feedback is not None:
             standing: bool = self.feedback.standing
@@ -638,11 +657,9 @@ class SpotController(Controller):
                 msg_twist = Twist()
                 linear_x = float(linear[0])
                 linear_y = float(linear[1])
-                linear_z = float(linear[2])
-
+      
                 msg_twist.linear.x = linear_x
                 msg_twist.linear.y = linear_y
-                msg_twist.linear.z = linear_z
                 msg_twist.angular.z = float(angular)
 
                 # print(
@@ -663,7 +680,7 @@ class SpotController(Controller):
                 time_str = datetime.now().strftime("%H:%M:%S:%f")
                 print(Fore.CYAN + f"[{time_str}] End motion time..")
 
-                return f"Moved {self.robot_name} with linear={linear}, angular={angular} for {duration}s and then stopped."
+                return f"Sent commands to move {self.robot_name} in the following directions : {directions}, for {duration}s and then stopped."
             except Exception as e:
                 print(f"Failed to move {self.robot_name}: {e}")
                 return f"Failed to move {self.robot_name}: {e}"
@@ -816,18 +833,21 @@ class SpotController(Controller):
     def get_prompts(self):
         prompts = RobotSystemPrompts(
             embodiment_and_persona="You are a robotic agent managing a robot dog. The robot dog you are operating is Boston dynamics' Spot",
+            "You should always use the available tools for these actions: standing, sitting, moving the robot dog and getting the status/battery/mobility metrics of the robot dog."
+            "MANDATORY: Always use the tools to provide information or execute actions."
+            "If the user asks something you don't know or are unsure, either ask the user to clarify his/her request, or tell him/her that you don't know.",
             about_your_capabilities="You capabilities are limited to the available tools. Anything that is asked to you and not provided by a tool is beyond your capabilities",
-            critical_instructions="Always use the corresponding tool if you can. If the user ask you to perform an action requiring to move the robot, always use the move tool."
-            " Same for all other tools: if the user ask for an information/action requiring to use a tool, always use the relevant tool. "
+            critical_instructions="Always use the tools whether the user request falls into standing, sitting, moving the robot, or getting the status information."
             "Be concise and clear in your answers."
-            "Produce short, clear sentences"
-            "Do not repeat yourself. try to summarize whenever possible in your answers, but be careful about not loosing important informations. give only the most important one"
-            "when possible, try to formulate only one sentence, but be careful to not put false imformations."
+            "If the user asks to stand, move, sit or know the status of the robot dog, always call the appropriate tools."
+            "Do not repeat yourself. try to summarize whenever possible in your answers, but be careful about not loosing important informations. give only the most important ones"
+            "Be careful to not put false informations."
             "do not use unecessary long words, use simple and clear ones"
             "never repeat yourself and avoid putting obvious informations. dont explain yourself too much. only give one answer, not multiple ones."
             "it is really important that you never ever repeat a sentence that you already said in your previous answers, even when if it is in another formulation. keep your anwers really short"
-            "Aim at producing a single clear and short sentence per query, unless very necessary."
-            "Do not generate more than 20 words per user query unless very necessary.",
+            "Aim at producing maximum a single clear and short sentence per query, unless very necessary."
+            "Keep a friendly tone"
+            "Do not reply with more than 10 words per user query unless very necessary.",
         )
         return prompts
 
@@ -931,7 +951,6 @@ class SpotController(Controller):
         @tool
         async def sit():
             """Command the robot dog to sit and transition from a standing position (on 4 legs) to a sitting position.
-            It cannot be used if the robot is already on the sitting. To know whether or not the robot is sitting, first get the status of the robot.
             """
             response = await self.sit()
             return response
@@ -939,36 +958,29 @@ class SpotController(Controller):
         @tool
         async def stand():
             """Command the robot to stand and transition from a sitting position to a standing position.
-            It cannot be used if the robot is already standing.  To know whether or not the robot is sitting, first get the status of the robot.
-            Do not attempt to stand the robot if the battery level is below 20% or if the robot is standing. In such cases, return an appropriate message.
-            To have the battery level, use the get_battery_status() tool.
             """
             response = await self.stand()
             return response
 
         @tool
-        def move(linear, angular, duration):
+        def move(longitudinal,lateral, yaw, duration):
             """
-            Move the robot with specified linear and angular velocities for a given duration.
-            This function controls movement along three axes (x, y, z) and rotation.
+             Move the robot dog with specified linear and angular velocities for a given duration. Unless the user's request could not be satisfied, provide an empty answer ''.
 
-            The coordinate system is as follows:
-            - x-axis: +x is forward, -x is backward.
-            - y-axis: +y is left, -y is right.
-            - z-axis: +z is up, -z is down.
+            Velocity rules:
+            If the user specifies a speed, use it as the magnitude of the relevant velocity.
+            If the user specifies only a direction (and possibly a duration) without a speed (e.g., "move left", "move backwards for 2 seconds" etc) , use a default velocity of 1 m/s (or -1 m/s depending on direction).
+            Each velocity parameter directly defines the movement speed:
+            linear velocities are in m/s and angular velocity is in rad/s.
+            If a velocity parameter is 0, there is no movement along that axis.
+            If duration is not specified, default to 1 second.
 
-            To perform this movement, the robot dog must be in the standing.
-            The user may specify a speed (e.g., "velocity 1m/s", "go slowly"). If a speed is provided, use it to set the magnitude of the linear or angular velocity vector. If no speed is specified, use a default of 1 m/s or -1 m/s.
-            If the user does not specify a time, assume a default duration of 1 second.
-
-            :param linear: A list of 3 floats representing [x, y, z] velocity in m/s. This vector should be constructed based on the user's direction and specified speed.
-            :param angular: A float for z-axis angular velocity (rotation).
-            :param duration: Duration of the movement in seconds.
-
-            Do not attempt to move the robot if the battery level is below 20% or if the robot is sitting. In such cases, return an appropriate message.
-            To have the battery level and whether or not the robot is sitting, you have the , use the get_general_status() tool.
+            :param longitudinal: A float specifying the velocity (in m/s) for moving the robot dog forward/backward. if `longitudinal` > 0 the robot moves forward. if  `longitudinal` < 0 the robot dog moves backwards. 
+            :param lateral: A float specifying the velocity (in m/s) for moving the robot dog left/right. `lateral` > 0 robot dog moves right. To move the robot dog left, you should have  `lateral` < 0.
+            :param yaw: A float for angular velocity (rotation). if `yaw` > 0 then the robot dog will rotate counter-clockwise (left). If `yaw` < 0 then the robot dog will rotate clockwise (right).
+            :param duration: Duration of the movement in seconds. The default value should be 1, if the user doesn't specify the duration.
             """
-            return self.move(linear, angular, duration)
+            return self.move([longitudinal,-lateral], yaw, duration)
 
         @tool
         def switch_mode(mode, object_name):
@@ -1021,8 +1033,8 @@ class SpotController(Controller):
             stand,
             sit,
             move,
-            switch_mode,
-            start_object_tracking,
-            stop_object_tracking,
+            #switch_mode,
+            #start_object_tracking,
+            #stop_object_tracking,
             get_wifi_connection_state,
         ]
