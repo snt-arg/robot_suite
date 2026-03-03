@@ -285,10 +285,6 @@ function install_spot_driver_jazzy() {
     PIP_CONSTRAINT=./bosdyn_msgs/pip-constraint.txt rosdep install -i -y --from-path ../ --skip-keys "$(cat ./bosdyn_msgs/rosdep-skip.txt)"
     
 
-    # ARCH=amd64  # or arm64
-    # for url in $(cat ${ARCH}-dpkg.txt); do wget $url && sudo apt install -y ./$(basename $url); done
-    # No need to do the above two lines anymore as we get the spot-cpp-sdk from our base image
-
     # installing spot_ros2
     git clone --recurse-submodules https://github.com/maeri18/spot_ros2.git
     cd ..
@@ -311,7 +307,7 @@ case "$1" in
         spot_install
         
         print_info "Building suite"
-        # python3 -m colcon build --symlink-install
+        python3 -m colcon build --symlink-install
         ;;
     unitree_go1)
         echo "Not yet supported,"

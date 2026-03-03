@@ -1,10 +1,6 @@
 # 🐳 Docker
 
-For this project, we are making use of [Docker Compose](https://docs.docker.com/compose/) to ease the build and start of containers.
-The `docker-compose.yml` file is composed of services, where each service is
-targeted for each robot platform.
-
-This project uses **Docker Compose** to simplify building and running containers for different robot platforms.
+This project uses [Docker Compose](https://docs.docker.com/compose/) to simplify building and running containers for different robot platforms.
 
 The main configuration file is `docker-compose.yml`, which defines a separate **service** for each supported robot platform.
 
@@ -28,7 +24,7 @@ The main configuration file is `docker-compose.yml`, which defines a separate **
 
     Note that you will need to have `docker-compose` installed on your system.
 
-    You can check with if it is installed with:
+    You can check if it is installed with:
 
     ```bash
     docker-compose -v
@@ -58,13 +54,8 @@ Currently, dedicated Docker services (and corresponding containers) are availabl
     ```bash
     docker compose up tello_suite
     ```
-- **spot**:
 
-    ```bash
-    docker compose up spot_suite
-    ```
-
-    This should automatically start a container and launch the driver, plugins and behaviour tree for the corresponding robot platform.
+    This should automatically start a container and launch the driver, plugins and behaviour tree for the Tello.
 
 ### Manual Docker Usage (Advanced)
 
@@ -95,9 +86,7 @@ docker build -t <robot_platform>_suite -f docker/<robot_platform>/Dockerfile .
 ```bash
 docker run --rm -it \
     -v /tmp/.X11-unix:/tmp/.X11-unix \
-    -v /dev/dri:/dev/dri \
     -e DISPLAY=$DISPLAY \
-    -e LIBGL_ALWAYS_SOFTWARE=1 \
     --device /dev/snd:/dev/snd \
     --net=host \
     <robot_platform>_suite \
@@ -109,9 +98,7 @@ docker run --rm -it \
 ```bash
 docker run --rm -it \
     -v /tmp/.X11-unix:/tmp/.X11-unix \
-    -v /dev/dri:/dev/dri \
     -e DISPLAY=$DISPLAY \
-    -e LIBGL_ALWAYS_SOFTWARE=1 \
     --device /dev/snd:/dev/snd \
     --net=host \
     <robot_platform>_suite \
@@ -129,9 +116,7 @@ docker run --rm -it \
     # Step 3: Launch the system inside the container
     docker run --rm -it \
         -v /tmp/.X11-unix:/tmp/.X11-unix \
-        -v /dev/dri:/dev/dri \
         -e DISPLAY=$DISPLAY \
-        -e LIBGL_ALWAYS_SOFTWARE=1 \
         --device /dev/snd:/dev/snd \
         --net=host \
         tello_suite \
@@ -140,5 +125,4 @@ docker run --rm -it \
 
 !!!Note
 
-    For the Spot suite, make sure to configure the configuration file of the spot_ros2 driver with the hostname, user name and password.
-    Before running the driver.
+    For the Spot suite, make sure to set correct values for the hostname, user name and password in the configuration file of the spot_ros2 driver.
