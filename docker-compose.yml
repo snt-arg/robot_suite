@@ -32,4 +32,4 @@ services:
         network_mode: "host"
         tty: true
         stdin_open: true
-        #command: "ros2 launch robot_bringup spot_launch.py"
+        command: "ros2 launch robot_bringup spot_launch.py"

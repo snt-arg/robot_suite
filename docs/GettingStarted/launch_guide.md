@@ -57,59 +57,8 @@ If you installed the suite using the [Docker installation guide](../GettingStart
 
     Don't forget to replace `robot_platform` with one of the [available robot platforms](../GettingStarted/docker.md/#available-platforms).
 
-If you have a stopped container, follow these commands :
 
-1.  Start the container
-
-    On host, run
-
-    ```bash
-    docker start <container_name>
-    ```
-
-1.  Enter the container
-
-    ```bash
-    docker exec -ti  <container_name> bash
-    ```
-
-1.  Sourcing the suite
-
-    Inside the container,
-
-    ```bash
-    source <path_to_workspace>/install/setup.bash
-    ```
-
-1.  Launching  
-     You can either launch the **whole suite** or **plugins in standalone mode**. For either, run the corresponding command within the Docker container.
-    - Whole suite
-
-        ```bash
-        ros2 launch robot_bringup <robot_platform>_launch.py
-        ```
-
-    - Individual plugin in standalone mode
-
-        ```bash
-        ros2 run <plugin_name> <plugin_node_name> --ros-args -p standalone:=true
-        ```
-
-    - Launch the `robot_agent` package if needed:
-        - On Host
-
-        ```bash
-        docker exec -ti <robot_platform>_suite bash
-        ```
-
-        - Then within the container
-
-        ```bash
-        ros2 run robot_agent robot_agent_node
-
-        ```
-
-!!! Note "Example"
+!!! Note "Example : Launch the suite inside an existing but stopped container" 
 
     If your container is named `tello_suite`, and you want to launch the whole suite, run
 

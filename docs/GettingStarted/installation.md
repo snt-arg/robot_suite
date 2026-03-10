@@ -19,7 +19,7 @@ The robot suite was only tested with :
 
 ## Virtual environment setup
 
-**Steps**
+**Steps:**
 
 1. Create the virtual environment using `python3-venv`
 
@@ -33,7 +33,7 @@ The robot suite was only tested with :
     ```bash
     source <path_to_environment>/bin/activate
     ```
-1. If your virtual environment is located inside the `src` folder (ie `<your_workspace_name>/src`) , you have to make sure that colcon won't attempt to build it. You can do this with the following command:
+1. If your virtual environment is located inside the ROS2 `src` folder (ie `<your_workspace_name>/src`) , you have to make sure that colcon won't attempt to build it. You can do this with the following command:
 
     ```bash
     touch <path_to_environment>/COLCON_IGNORE
