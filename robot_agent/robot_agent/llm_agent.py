@@ -309,7 +309,7 @@ class Agent(Node):
     def load_robots(self):
         """Method to load all available robot controllers and pass them to our agent.
         Robot controllers should be located inside the "controllers" folder of this package to be loaded
-        """ 
+        """
         robots_loaded = []
         robot_files_not_loaded = []
 
@@ -542,4 +542,3 @@ def main(args=None):
 
 if __name__ == "__main__":
     main()
-

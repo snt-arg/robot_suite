@@ -316,8 +316,10 @@ class TelloController(Controller):
         """Command the robot to move with specified linear and angular velocities for a certain duration."""
 
         ### Test
-        print(f"DEBUG: LLM called move() with linear={linear}, angular={angular}, duration={duration}s")
-        directions:str = []
+        print(
+            f"DEBUG: LLM called move() with linear={linear}, angular={angular}, duration={duration}s"
+        )
+        directions: str = []
         linear_x = float(linear[0])
         linear_y = float(linear[1])
         linear_z = float(linear[2])
@@ -352,7 +354,6 @@ class TelloController(Controller):
             + f"DEBUG: move() called with linear={linear}, angular={angular}, duration={duration}s"
         )
 
-
         if not self.current_state_data:
             return f"Drone state for {self.robot_name} is not yet known. Cannot move."
         current_physical_state = self.current_state_data.get("physical_state")
@@ -361,7 +362,6 @@ class TelloController(Controller):
             return f"{self.robot_name} is not in the air. Current state: '{current_physical_state}'. Cannot move."
         if current_height is not None and current_height < 8 and linear[2] < 0:
             return f"{self.robot_name} is too low (height: {current_height} dm) to move further down. Height must be at least 8 dm."
-        
 
         try:
             msg_twist = Twist()
@@ -558,7 +558,7 @@ class TelloController(Controller):
             f"FlyMode='{fly_mode_str}', Battery='{battery_str}', WiFi Strength='{wifi_strength_str}'.{tracking_info_str}"
         )
 
-    def switch_mode(self, mode: str, object_name: Optional[str] = None) -> str:
+    def switch_mode(self, mode: str) -> str:
         """Switch the robot's control mode."""
         # time stamp
         time_str = datetime.now().strftime("%H:%M:%S:%f")
@@ -579,12 +579,13 @@ class TelloController(Controller):
                 response = "Switched to hand gesture control mode."
 
             elif mode_requested == "tracking":
-                if not object_name:
-                    return "Error: To switch to tracking mode, you must specify an object_name."
+                # if not object_name:
+                #     return "Error: To switch to tracking mode, you must specify an object_name."
                 msg_str.data = "t"
                 self.key_pressed_pub.publish(msg_str)
                 # Immediately return the result from the helper function
-                response = self.start_object_tracking(object_name)
+                response = "Switched to tracking mode."
+                # response = self.start_object_tracking(object_name)
 
             elif mode_requested == "stop tracking":
                 msg_str.data = "s"
@@ -740,7 +741,7 @@ class TelloController(Controller):
     def get_tools(self) -> List:
 
         @tool
-        def move(longitudinal,lateral,vertical, yaw, duration):
+        def move(longitudinal, lateral, vertical, yaw, duration):
             """
             Move the drone with specified linear and angular velocities for a given duration. Unless the user's request could not be satisfied, provide an empty answer ''.
 
@@ -752,13 +753,13 @@ class TelloController(Controller):
             If a velocity parameter is 0, there is no movement along that axis.
             If duration is not specified, default to 1 second.
 
-            :param longitudinal: A float specifying the velocity (in m/s) for moving the drone forward/backward. if `longitudinal` > 0 the drone moves forward. if  `longitudinal` < 0 the drone moves backwards. 
+            :param longitudinal: A float specifying the velocity (in m/s) for moving the drone forward/backward. if `longitudinal` > 0 the drone moves forward. if  `longitudinal` < 0 the drone moves backwards.
             :param lateral: A float specifying the velocity (in m/s) for moving the drone left/right. `lateral` > 0 drone moves right. To move the drone left, you should have  `lateral` < 0.
             :param vertical: A float specifying the velocity (in m/s) for moving the drone up/down. if `vertical` > 0 the drone moves up. To move the drone down you should have `vertical` < 0.
             :param yaw: A float for angular velocity (rotation). if `yaw` > 0 then the drone will rotate counter-clockwise (left). If `yaw` < 0 then the drone will rotate clockwise (right). if `yaw` = 0, the drone won't rotate.
             :param duration: Duration of the movement in seconds. The default value should be 1, if the user doesn't specify the duration.
             """
-            return self.move([longitudinal,-lateral,vertical], yaw, duration)
+            return self.move([longitudinal, -lateral, vertical], yaw, duration)
 
         @tool
         def takeoff():
@@ -767,13 +768,12 @@ class TelloController(Controller):
 
         @tool
         def land():
-            """Command the robot to land on the ground.
-            """
+            """Command the robot to land on the ground."""
             return self.land()
 
         @tool
         def flip(direction):
-            """Command the drone to perform a flip in the specified direction. 
+            """Command the drone to perform a flip in the specified direction.
             :param direction : A String indicating the flip direction. Valid directions: 'forward', 'backward', 'left', 'right'. Default should be 'left', in case the user does not provide a direction.
             """
             return self.flip(direction)
@@ -789,26 +789,23 @@ class TelloController(Controller):
             return self.status_drone()
 
         @tool
-        def switch_mode(mode, object_name):
+        def switch_mode(mode):
             """
-            Switches the control mode of the drone. 
+            Switches the control mode of the drone.
             - If the user selects 'keyboard', tell him/her about these keyboard command: "t" - takeoff; "l" - land; "w","a","d","s" - move. Also tell the user that he/she has to select the image window for the commands to be executed.
             - If the user selects 'hand', tell him to use hands to control the drone, all the options are in the image window.
-            - If the user selects 'tracking': the drone starts tracking a person holding a specific object. 
-            When using this mode, you must also provide the 'object_name' parameter.
-            Choose the object from this list: [backpack, umbrella, handbag, bottle, cup, fork, knife, spoon, bowl, banana, apple, cell phone, book, laptop, keyboard].
+            - If the user selects 'tracking': the drone is ready to start tracking a person.
             - If the user selects 'stop tracking': Stop the current tracking task.
 
             :param mode: The desired control mode as a string. Possible value: "keyboard", "hand", "tracking", "stop tracking".
-            :param object_name: The name of the object to track. Required only for 'tracking' mode.
             """
-            return self.switch_mode(mode, object_name)
+            return self.switch_mode(mode)
 
         @tool
         def start_object_tracking(object_name):
             """
             Use this tool to start tracking a person holding a specific object. It will wait
-            up to 5 seconds for a person holding this object to be detected. 
+            up to 5 seconds for a person holding this object to be detected.
 
             First, you MUST choose the most similar object from this list of available options:
             [backpack, umbrella, handbag, bottle, cup, fork, knife, spoon, bowl, banana, apple, cell phone, book, laptop, keyboard]
@@ -828,7 +825,7 @@ class TelloController(Controller):
         @tool
         def throw_and_go():
             """Command the drone to perform a throw takeoff. The drone must be on the hands of the user
-                and then physically thrown within a 5-seconds
+            and then physically thrown within a 5-seconds
             """
             return self.throw_and_go()
 
@@ -850,4 +847,3 @@ class TelloController(Controller):
             throw_and_go,
             palm_land,
         ]
-

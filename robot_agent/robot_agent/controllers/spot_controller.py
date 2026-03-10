@@ -689,7 +689,7 @@ class SpotController(Controller):
         else:
             return f"Robot state (sitting/standing) is not yet known. Cannot move."
 
-    def switch_mode(self, mode: str, object_name: Optional[str] = None) -> str:
+    def switch_mode(self, mode: str) -> str:
         # time stamp
         time_str = datetime.now().strftime("%H:%M:%S:%f")
         print(Fore.CYAN + f"[{time_str}] Start switch mode time..")
@@ -714,12 +714,13 @@ class SpotController(Controller):
                 response = "Switched to hand gesture control mode."
 
             elif mode_requested == "tracking":
-                if not object_name:
-                    return "Error: To switch to tracking mode, you must specify an object_name."
+                # if not object_name:
+                #     return "Error: To switch to tracking mode, you must specify an object_name."
                 msg_str.data = "t"
                 self.key_pressed_pub.publish(msg_str)
                 # Immediately return the result from the helper function
-                response = self.start_object_tracking(object_name)
+                response = "Switched to tracking mode."
+                # response = self.start_object_tracking(object_name)
 
             elif mode_requested == "stop tracking":
                 msg_str.data = "s"  # stopping the tracking defaults to keyboard mode
@@ -990,13 +991,10 @@ class SpotController(Controller):
             If the user selects 'keyboard', he has to know that to stand he has to use "t", to sit "g", to move the letters "a", "w", "d", "s". Still in keyboard mode
             the user must know that for rotation he/she can use "left-arrow" and "right-arrow" to move left or right respectively, and for altitude, he/she can use "up-arrow" to move up and "down-arrow" to move down.
             If the user selects 'hand', he has to know that he has to use the hands to control the robot dog, all the options are in the image window.
-            If the user selects 'tracking', tracking': Start tracking a person holding a specific object.
-            When using this mode, you must also provide the 'object_name' parameter.
-            Choose the object from this list: [backpack, umbrella, handbag, bottle, cup, fork, knife, spoon, bowl, banana, apple, cell phone, book, laptop, keyboard].
+            If the user selects 'tracking', tracking': In this mode, the robot can start tracking a specific person.
             If the user selects 'stop tracking': Stop the current tracking task.
 
             :param mode: The desired control mode as a string (e.g., "keyboard", "hand", "tracking", "stop tracking").
-            :param object_name: The name of the object to track. Required only for 'tracking' mode.
             """
             return self.switch_mode(mode, object_name)
 
