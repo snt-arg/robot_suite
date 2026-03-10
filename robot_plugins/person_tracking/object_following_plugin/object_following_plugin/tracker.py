@@ -265,34 +265,53 @@ class Tracker(PluginNode):
             f"\n!!!Tracking signal received from llm module {signal_msg}!!!\n"
         )
 
-        if self.tracking_mode == "llm":
+        infodict = json.loads(signal_msg.data)
 
-            # test to track someone without the llm
-            # signal_msg.data = '{"action": "tracking", "id": 0, "info": {"bottom_right": [0.5055210590362549, 1.0], "top_left": [0.2135268896818161, 0.03876398876309395], "YOLO_id": 2, "objects": []}}'
-            # end test
+        # if we aren't tracking and receive a tracking signal prompting to start the tracking:
+        if self.tracking == False and infodict["action"] == "tracking":
+            bottom_right = infodict["info"]["bottom_right"]
+            top_left = infodict["info"]["top_left"]
+            id = infodict["info"]["YOLO_id"]
 
-            infodict = json.loads(signal_msg.data)
+            # Search the pilot person box in our list of bounding boxes
+            self.find_pilot_llm(top_left, bottom_right, id)
 
-            # if we aren't tracking and receive a tracking signal prompting to start the tracking:
-            if self.tracking == False and infodict["action"] == "tracking":
-                bottom_right = infodict["info"]["bottom_right"]
-                top_left = infodict["info"]["top_left"]
-                id = infodict["info"]["YOLO_id"]
-
-                # Search the pilot person box in our list of bounding boxes
-                self.find_pilot_llm(top_left, bottom_right, id)
-
-            # if we receive a message to stop the tracking.
-            elif infodict["action"] == "stop_tracking":
-                self.tracking = False
-                self.pilot_box = None
-                self.get_logger().info(
-                    f"\nLlm commanded to stop the tracking, so we stopped!\n"
-                )
-        else:
+        # if we receive a message to stop the tracking.
+        elif infodict["action"] == "stop_tracking":
+            self.tracking = False
+            self.pilot_box = None
             self.get_logger().info(
-                f"\n!!!Didn't process the tracking signal because we aren't on LLM mode\n"
+                f"\nLlm commanded to stop the tracking, so we stopped!\n"
             )
+
+        # if self.tracking_mode == "llm":
+
+        #     # test to track someone without the llm
+        #     # signal_msg.data = '{"action": "tracking", "id": 0, "info": {"bottom_right": [0.5055210590362549, 1.0], "top_left": [0.2135268896818161, 0.03876398876309395], "YOLO_id": 2, "objects": []}}'
+        #     # end test
+
+        #     infodict = json.loads(signal_msg.data)
+
+        #     # if we aren't tracking and receive a tracking signal prompting to start the tracking:
+        #     if self.tracking == False and infodict["action"] == "tracking":
+        #         bottom_right = infodict["info"]["bottom_right"]
+        #         top_left = infodict["info"]["top_left"]
+        #         id = infodict["info"]["YOLO_id"]
+
+        #         # Search the pilot person box in our list of bounding boxes
+        #         self.find_pilot_llm(top_left, bottom_right, id)
+
+        #     # if we receive a message to stop the tracking.
+        #     elif infodict["action"] == "stop_tracking":
+        #         self.tracking = False
+        #         self.pilot_box = None
+        #         self.get_logger().info(
+        #             f"\nLlm commanded to stop the tracking, so we stopped!\n"
+        #         )
+        # else:
+        #     self.get_logger().info(
+        #         f"\n!!!Didn't process the tracking signal because we aren't on LLM mode\n"
+        #     )
 
     def find_pilot_llm(self, top_left_coordinates, bottom_right_coordinates, id):
         """Method to find the pilot in the list of bounding boxes"""
