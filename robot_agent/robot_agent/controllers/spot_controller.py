@@ -1,7 +1,7 @@
 from rosa import RobotSystemPrompts
 from langchain.agents import tool
 
-from rclpy.node import Node
+from robot_agent.controller import Controller
 
 from std_msgs.msg import String, Bool
 from geometry_msgs.msg import Twist
@@ -21,7 +21,6 @@ from sensor_msgs.msg import JointState
 
 import time
 from datetime import datetime
-import threading
 
 from typing import List, Optional
 from colorama import Fore, init
@@ -49,7 +48,9 @@ DICTIONARY_YOLO_OBJECTS = {
 }
 
 
-class SpotController(Node):
+class SpotController(Controller):
+
+    robot_name = "spot"
 
     ### Topics and services
     # velocity commands
@@ -80,7 +81,7 @@ class SpotController(Node):
     tracking_signal_topic = "/tracking_signal_llm"  # Topic on which th signal to track a specific person is sent
     person_info_topic = "/tracking_info"  # Topic on which information about detected persons and objects are sent
 
-    def __init__(self, robot_name: str = "Spot") -> None:
+    def __init__(self, robot_name: str = robot_name) -> None:
         super().__init__("spot_controller")
 
         # Publishers
@@ -570,7 +571,7 @@ class SpotController(Node):
             + tracking_info_str
         )
 
-    def sit(self) -> str:
+    async def sit(self) -> str:
         # time stamp
         time_str = datetime.now().strftime("%H:%M:%S:%f")
         print(Fore.CYAN + f"[{time_str}] Start sit time..")
@@ -580,9 +581,9 @@ class SpotController(Node):
         if self.feedback is not None:
             sitting: bool = self.feedback.sitting
 
-        if sitting:
+        if sitting is not None:
             try:
-                self.call_sit_service()
+                await self.call_sit_service()
 
                 # time stamp
                 time_str = datetime.now().strftime("%H:%M:%S:%f")
@@ -594,7 +595,7 @@ class SpotController(Node):
         else:
             return f"Robot state (sitting/standing) is not yet known. Cannot sit."
 
-    def stand(self) -> str:
+    async def stand(self) -> str:
         # time stamp
         time_str = datetime.now().strftime("%H:%M:%S:%f")
         print(Fore.CYAN + f"[{time_str}] Start stand tool time..")
@@ -604,9 +605,9 @@ class SpotController(Node):
         if self.feedback is not None:
             standing: bool = self.feedback.standing
 
-        if standing:
+        if standing is not None:
             try:
-                self.call_stand_service()
+                await self.call_stand_service()
 
                 time_str = datetime.now().strftime("%H:%M:%S:%f")
                 print(Fore.CYAN + f"[{time_str}] End stand tool time..")
@@ -624,9 +625,30 @@ class SpotController(Node):
 
         standing = None
 
+        ### Test
         print(
-            f"linear : {type(linear)}, angular={type(angular)}, duration={type(duration)}"
+            f"DEBUG: LLM called move() with linear={linear}, angular={angular}, duration={duration}s"
         )
+        directions: str = []
+        linear_x = float(linear[0])
+        linear_y = float(linear[1])
+        if linear_x > 0:
+            directions.append("forward")
+        elif linear_x < 0:
+            directions.append("backward")
+
+        if linear_y > 0:
+            directions.append("left")
+        elif linear_y < 0:
+            directions.append("right")
+
+        if angular > 0:
+            directions.append("Rotation to the left")
+        elif angular < 0:
+            directions.append("Rotation to the right")
+
+        print(f"Attempted movement : {directions}")
+        ### End test
 
         if self.feedback is not None:
             standing: bool = self.feedback.standing
@@ -637,21 +659,19 @@ class SpotController(Node):
                 msg_twist = Twist()
                 linear_x = float(linear[0])
                 linear_y = float(linear[1])
-                linear_z = float(linear[2])
 
                 msg_twist.linear.x = linear_x
                 msg_twist.linear.y = linear_y
-                msg_twist.linear.z = linear_z
                 msg_twist.angular.z = float(angular)
 
-                print(
-                    f"DEBUG: LLM called move() with linear={linear}, angular={angular}, duration={duration}s"
-                )
+                # print(
+                #    f"DEBUG: LLM called move() with linear={linear}, angular={angular}, duration={duration}s"
+                # )
 
                 t0 = self.get_clock().now().nanoseconds
 
                 while (self.get_clock().now().nanoseconds - t0) / 1e9 <= duration:
-                    print((self.get_clock().now().nanoseconds - t0) / 1e9)
+                    # print((self.get_clock().now().nanoseconds - t0) / 1e9)
 
                     self.commands_pub.publish(msg_twist)
 
@@ -662,14 +682,14 @@ class SpotController(Node):
                 time_str = datetime.now().strftime("%H:%M:%S:%f")
                 print(Fore.CYAN + f"[{time_str}] End motion time..")
 
-                return f"Moved {self.robot_name} with linear={linear}, angular={angular} for {duration}s and then stopped."
+                return f"Sent commands to move {self.robot_name} in the following directions : {directions}, for {duration}s and then stopped."
             except Exception as e:
                 print(f"Failed to move {self.robot_name}: {e}")
                 return f"Failed to move {self.robot_name}: {e}"
         else:
             return f"Robot state (sitting/standing) is not yet known. Cannot move."
 
-    def switch_mode(self, mode: str, object_name: Optional[str] = None) -> str:
+    def switch_mode(self, mode: str) -> str:
         # time stamp
         time_str = datetime.now().strftime("%H:%M:%S:%f")
         print(Fore.CYAN + f"[{time_str}] Start switch mode time..")
@@ -694,12 +714,13 @@ class SpotController(Node):
                 response = "Switched to hand gesture control mode."
 
             elif mode_requested == "tracking":
-                if not object_name:
-                    return "Error: To switch to tracking mode, you must specify an object_name."
+                # if not object_name:
+                #     return "Error: To switch to tracking mode, you must specify an object_name."
                 msg_str.data = "t"
                 self.key_pressed_pub.publish(msg_str)
                 # Immediately return the result from the helper function
-                response = self.start_object_tracking(object_name)
+                response = "Switched to tracking mode."
+                # response = self.start_object_tracking(object_name)
 
             elif mode_requested == "stop tracking":
                 msg_str.data = "s"  # stopping the tracking defaults to keyboard mode
@@ -814,12 +835,22 @@ class SpotController(Node):
     ############################################# Getters #########################################################################
     def get_prompts(self):
         prompts = RobotSystemPrompts(
-            embodiment_and_persona="You are a robotic agent managing a robot dog. The robot dog you are operating is Boston dynamics' Spot",
+            embodiment_and_persona="You are a robotic agent managing a robot dog. The robot dog you are operating is Boston dynamics' Spot"
+            "You should always use the available tools for these actions: standing, sitting, moving the robot dog and getting the status/battery/mobility metrics of the robot dog."
+            "MANDATORY: Always use the tools to provide information or execute actions."
+            "If the user asks something you don't know or are unsure, either ask the user to clarify his/her request, or tell him/her that you don't know.",
             about_your_capabilities="You capabilities are limited to the available tools. Anything that is asked to you and not provided by a tool is beyond your capabilities",
-            critical_instructions="Always use the corresponding tool if you can. If the user ask you to perform an action requiring to move the robot, always use the mode tool."
-            " Same for all other tools: if the user ask for an information/action requiring to use a tool, always use the relevant tool. "
-            "Also, tell the user what you are trying to do."
-            "If an error occured, tell the user about it.",
+            critical_instructions="Always use the tools whether the user request falls into standing, sitting, moving the robot, or getting the status information."
+            "Be concise and clear in your answers."
+            "If the user asks to stand, move, sit or know the status of the robot dog, always call the appropriate tools."
+            "Do not repeat yourself. try to summarize whenever possible in your answers, but be careful about not loosing important informations. give only the most important ones"
+            "Be careful to not put false informations."
+            "do not use unecessary long words, use simple and clear ones"
+            "never repeat yourself and avoid putting obvious informations. dont explain yourself too much. only give one answer, not multiple ones."
+            "it is really important that you never ever repeat a sentence that you already said in your previous answers, even when if it is in another formulation. keep your anwers really short"
+            "Aim at producing maximum a single clear and short sentence per query, unless very necessary."
+            "Keep a friendly tone"
+            "Do not reply with more than 10 words per user query unless very necessary.",
         )
         return prompts
 
@@ -921,46 +952,36 @@ class SpotController(Node):
             return self.get_general_status()
 
         @tool
-        def sit():
-            """Command the robot dog to sit and transition from a standing position (on 4 legs) to a sitting position.
-            It cannot be used if the robot is already on the sitting. To know whether or not the robot is sitting, first get the status of the robot.
-            """
-            return self.sit()
+        async def sit():
+            """Command the robot dog to sit and transition from a standing position (on 4 legs) to a sitting position."""
+            response = await self.sit()
+            return response
 
         @tool
-        def stand():
-            """Command the robot to stand and transition from a sitting position to a standing position.
-            It cannot be used if the robot is already standing.  To know whether or not the robot is sitting, first get the status of the robot.
-            Do not attempt to stand the robot if the battery level is below 20% or if the robot is standing. In such cases, return an appropriate message.
-            To have the battery level, use the get_battery_status() tool.
-            """
-            return self.stand()
+        async def stand():
+            """Command the robot to stand and transition from a sitting position to a standing position."""
+            response = await self.stand()
+            return response
 
         @tool
-        def move(linear, angular, duration):
+        def move(longitudinal, lateral, yaw, duration):
             """
-            Move the robot with specified linear and angular velocities for a given duration.
-            This function controls movement along three axes (x, y, z) and rotation.
+             Move the robot dog with specified linear and angular velocities for a given duration. Unless the user's request could not be satisfied, provide an empty answer ''.
 
-            The coordinate system is as follows:
-            - x-axis: +x is forward, -x is backward.
-            - y-axis: +y is left, -y is right.
-            - z-axis: +z is up, -z is down.
-            - angular z-axis: +z is counter-clockwise turn (left), -z is clockwise turn (right).
+            Velocity rules:
+            If the user specifies a speed, use it as the magnitude of the relevant velocity.
+            If the user specifies only a direction (and possibly a duration) without a speed (e.g., "move left", "move backwards for 2 seconds" etc) , use a default velocity of 1 m/s (or -1 m/s depending on direction).
+            Each velocity parameter directly defines the movement speed:
+            linear velocities are in m/s and angular velocity is in rad/s.
+            If a velocity parameter is 0, there is no movement along that axis.
+            If duration is not specified, default to 1 second.
 
-            To perform this movement, the robot dog must be in the standing.
-            The user may specify a speed (e.g., "velocity 1m/s", "go slowly"). If a speed is provided, use it to set the magnitude of the linear or angular velocity vector. If no speed is specified, use a default of 1 m/s or -1 m/s.
-            If the user does not specify a time, assume a default duration of 1 second.
-
-            :param linear: A list of 3 floats representing [x, y, z] velocity in m/s. This vector should be constructed based on the user's direction and specified speed.
-                        For example, if the user says "go right at 1.2 m/s", the vector should be [0.0, -1.2, 0.0].
-            :param angular: A float for z-axis angular velocity (rotation).
-            :param duration: Duration of the movement in seconds.
-
-            Do not attempt to move the robot if the battery level is below 20% or if the robot is sitting. In such cases, return an appropriate message.
-            To have the battery level and whether or not the robot is sitting, you have the , use the get_general_status() tool.
+            :param longitudinal: A float specifying the velocity (in m/s) for moving the robot dog forward/backward. if `longitudinal` > 0 the robot moves forward. if  `longitudinal` < 0 the robot dog moves backwards.
+            :param lateral: A float specifying the velocity (in m/s) for moving the robot dog left/right. `lateral` > 0 robot dog moves right. To move the robot dog left, you should have  `lateral` < 0.
+            :param yaw: A float for angular velocity (rotation). if `yaw` > 0 then the robot dog will rotate counter-clockwise (left). If `yaw` < 0 then the robot dog will rotate clockwise (right).
+            :param duration: Duration of the movement in seconds. The default value should be 1, if the user doesn't specify the duration.
             """
-            return self.move(linear, angular, duration)
+            return self.move([longitudinal, -lateral], yaw, duration)
 
         @tool
         def switch_mode(mode, object_name):
@@ -970,13 +991,10 @@ class SpotController(Node):
             If the user selects 'keyboard', he has to know that to stand he has to use "t", to sit "g", to move the letters "a", "w", "d", "s". Still in keyboard mode
             the user must know that for rotation he/she can use "left-arrow" and "right-arrow" to move left or right respectively, and for altitude, he/she can use "up-arrow" to move up and "down-arrow" to move down.
             If the user selects 'hand', he has to know that he has to use the hands to control the robot dog, all the options are in the image window.
-            If the user selects 'tracking', tracking': Start tracking a person holding a specific object.
-            When using this mode, you must also provide the 'object_name' parameter.
-            Choose the object from this list: [backpack, umbrella, handbag, bottle, cup, fork, knife, spoon, bowl, banana, apple, cell phone, book, laptop, keyboard].
+            If the user selects 'tracking', tracking': In this mode, the robot can start tracking a specific person.
             If the user selects 'stop tracking': Stop the current tracking task.
 
             :param mode: The desired control mode as a string (e.g., "keyboard", "hand", "tracking", "stop tracking").
-            :param object_name: The name of the object to track. Required only for 'tracking' mode.
             """
             return self.switch_mode(mode, object_name)
 
@@ -1005,16 +1023,16 @@ class SpotController(Node):
         return [
             get_battery_status,
             get_mobility_metrics,
-            get_info_spot,
-            get_faults,
-            get_odometry,
+            # get_info_spot,
+            # get_faults,
+            # get_odometry,
             get_general_status,
-            get_power_state,
+            # get_power_state,
             stand,
             sit,
             move,
-            switch_mode,
-            start_object_tracking,
-            stop_object_tracking,
+            # switch_mode,
+            # start_object_tracking,
+            # stop_object_tracking,
             get_wifi_connection_state,
         ]

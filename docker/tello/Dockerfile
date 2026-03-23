@@ -14,8 +14,7 @@ RUN apt update && \
 # Copy Robot Suite
 COPY . /workspace/robot_suite
 
-ARG IN_DOCKER=1
-ENV IN_DOCKER=$IN_DOCKER
+ENV PIP_BREAK_SYSTEM_PACKAGES=1
 WORKDIR /workspace/robot_suite
 SHELL ["/bin/bash", "-c"]
 RUN ./bootstrap.sh tello
@@ -33,6 +32,5 @@ RUN echo "#!/bin/bash" >> /entrypoint.sh \
     && chmod a+x /entrypoint.sh
 
 WORKDIR /workspace/robot_suite
-
 ENTRYPOINT ["/entrypoint.sh"]
 CMD ["bash"]

@@ -144,10 +144,29 @@ class VoiceInOut(Node):
         self.stop_tts = False  # variable to stop TTS if needed
 
         # --> Start output audio stream
-        self.stream = self.pya.open(
-            format=self.format, channels=self.channels, rate=self.rate, output=True
+        self.audio_output_device_index = self.pya.get_default_output_device_info()[
+            "index"
+        ]
+        self.audio_output_format_is_correct = self.pya.is_format_supported(
+            rate=self.rate,
+            output_channels=self.channels,
+            output_format=self.format,
+            output_device=self.audio_output_device_index,
         )
-
+        if self.audio_output_format_is_correct:
+            try:
+                self.stream = self.pya.open(
+                    format=self.format,
+                    channels=self.channels,
+                    rate=self.rate,
+                    output=True,
+                )
+            except Exception as e:
+                self.get_logger().error(
+                    f"An exception occured while opening the audio output stream {e}."
+                )
+        else:
+            self.get_logger().error(f"Unsupported audio output format")
         ##### ANNOUNCE INITIALIZATION OF SPEECH
         self.speak("Voice input output node initialized.")
         self.speak("Listening for your commands.")

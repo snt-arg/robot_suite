@@ -16,11 +16,8 @@ done
 sudo apt-get update && sudo apt-get install -y python3-rosdep python3-pip wget
 
 if test -f "$REQUIREMENTS_FILE"; then
-    if [ "$IN_DOCKER" = "1" ]; then
-        sudo pip3 install --no-cache-dir -r $REQUIREMENTS_FILE --break-system-packages
-    else
-        sudo pip3 install --no-cache-dir -r $REQUIREMENTS_FILE 
-    fi
+    sudo pip3 install --no-cache-dir -r $REQUIREMENTS_FILE 
+  
     
 else
     echo "ERROR: $REQUIREMENTS_FILE not found. Please initialize spot_wrapper with: git submodule init --update"
@@ -45,4 +42,4 @@ sudo apt-get install -y python3-apt
 # Install bosdyn_msgs - automatic conversions of BD protobufs to ROS messages
 
 # Install spot-cpp-sdk
-sudo dpkg -i /spot_sdk_install/spot-cpp-sdk/cpp/build/spot-cpp-sdk_5.0.1.2_amd64.deb
+sudo dpkg -i /spot_sdk_install/spot-cpp-sdk/cpp/build/spot-cpp-sdk_5.0.1_amd64.deb

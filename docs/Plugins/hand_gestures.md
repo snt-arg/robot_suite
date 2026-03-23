@@ -1,9 +1,5 @@
 # Hand Gestures Plugin
 
-!!! note
-
-    To be checked!
-
 This plugin aims to detect hand landmarks and interpret the landmarks to gestures.
 These gestures can then be used to control a robot movement for instance.
 

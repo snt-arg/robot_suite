@@ -144,7 +144,7 @@ def generate_launch_description():
     pkg_dir = get_package_share_directory("robot_bringup")
 
     create_spot_driver_launch(ld, pkg_dir)
-    create_robot_bt_launch(ld)
+    # create_robot_bt_launch(ld)
     # create_rosbridge_server_launch(ld)
     # create_video_interface_launch(ld)
 

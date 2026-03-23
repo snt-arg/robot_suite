@@ -18,7 +18,7 @@ from math import pi
 ##NB : all directions : left, right... are from the drone's perspective
 
 
-class RotateTello(Action):
+class RotateSpot(Action):
 
     # publishers
     publisher_commands: Publisher
@@ -29,7 +29,7 @@ class RotateTello(Action):
 
     rotation_direction: str = None  # left or right
 
-    commands_topic: str = "/cmd_vel"
+    commands_topic: str = "/byte/cmd_vel"
 
     def setup(self) -> None:
         self.publisher_commands = self.node.create_publisher(

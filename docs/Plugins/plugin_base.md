@@ -1,6 +1,6 @@
 # Plugin Base
 
-The `plugin_base` package serves as a bridge between the `robot_bt` framework and any custom plugins you create. It allows you to develop plugins independently, without requiring direct use of `robot_bt` or the `py-trees` library (which manages the behavior tree).
+The `plugin_base` package serves as a bridge between the `robot_bt` framework and any custom plugins you create. It allows you to develop plugins independently, without requiring direct use of `robot_bt` or the `py-trees` library (which manages the [behavior tree](../Packages/robot_bt.md)).
 
 Essentially, this package provides a ROS 2 node with a pre-configured ROS 2 service, enabling the behavior tree to trigger the execution (or "ticking") of your plugin.
 
@@ -13,7 +13,7 @@ Using this package is straightforward and requires only two steps:
 
 !!! danger
 
-    You must implement the `tick` function. You can think of it as an inifite while loop. This function should not contain any inifinte loop inside!!
+    You **must** implement the `tick` function. You can think of it as an infinite while loop. This function should not contain any infinite loop inside!!
 
 !!! example
 
@@ -54,6 +54,12 @@ ros2 run plugin_base test_plugin
 
     In case you want to test your plugin while in development, you can run it in standalone mode.
     In order to use the plugin in standalone mode, you can run the following command:
+
+    ```bash
+    ros2 run <plugin_package_name> <plugin_node_name> --ros-args -p standalone:=true tick_rate:=30
+    ```
+
+    An example with the aforementioned `test_plugin`:
 
     ```sh
     ros2 run plugin_server_base test_plugin --ros-args -p standalone:=true -p tick_rate:=30
