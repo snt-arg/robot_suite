@@ -26,6 +26,7 @@ services:
         volumes:
             - /tmp/.X11-unix:/tmp/.X11-unix
         network_mode: "host"
+        ipc: "host"
         tty: true
         stdin_open: true
         #command: "ros2 launch robot_bringup spot_launch.py"
