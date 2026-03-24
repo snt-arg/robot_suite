@@ -22,7 +22,7 @@ For more information, refer to the Docker page.
 
 ## Documentation
 
-**Documentation can be found [here](https://snt-arg.github.io/tello_suite/).**
+**Documentation can be found [here](https://snt-arg.github.io/robot_suite).**
 
 Additionally, the documentation can be viewed locally using the following options:
 

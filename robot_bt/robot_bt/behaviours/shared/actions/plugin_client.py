@@ -1,10 +1,11 @@
+import rclpy
 import json
 from typing import Dict
 import py_trees
 from robot_interfaces.srv import PluginInterface
 from rclpy.node import Node
 from rclpy.client import Client
-from rclpy.logging import rclpy
+from rclpy.logging import get_logger
 
 STATUS_MAP = ["FAILURE", "RUNNING", "SUCCESS"]
 
@@ -28,7 +29,6 @@ class PluginClient(py_trees.behaviour.Behaviour):
         self._global_blackboard.register_key("actions", py_trees.common.Access.WRITE)
         self._global_blackboard.register_key("plugins", py_trees.common.Access.WRITE)
 
-
     def setup(self) -> None:  # type: ignore
         self.client = self.node.create_client(
             PluginInterface, f"{self.plugin_name}/bt_server"
@@ -47,9 +47,6 @@ class PluginClient(py_trees.behaviour.Behaviour):
         request.blackboard = self._serialize_blackboard()
 
         future = self.client.call_async(request)
-        ## test
-        #print(f"\n!!!!!! Sending a request for {self.plugin_name}. The response was {future}\n")
-        # end
         rclpy.spin_until_future_complete(self.node, future)
 
         return future.result()
@@ -77,9 +74,7 @@ class PluginClient(py_trees.behaviour.Behaviour):
 
         return encoded_blackboard
 
-
     def _deserialize_blackboard(self, encoded_blackboard: str) -> None:
-        print(encoded_blackboard)
         blackboard = json.loads(encoded_blackboard)
         # TODO: Make a union of received blackboard with current blackboard
 

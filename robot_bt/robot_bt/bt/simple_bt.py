@@ -11,12 +11,13 @@ def create_tree(node):  # Leaf nodes
     # Decorator
     invert_failure = py_trees.decorators.Inverter(name="Inverter", child=failure_node)
 
-    plugin = py_trees.decorators.Inverter(name="Inverter", child=PluginClient("test", "test_plugin_node", node))
+    plugin = py_trees.decorators.Inverter(
+        name="Inverter", child=PluginClient("test", "test_plugin_node", node)
+    )
 
     # Composite
     sequence = py_trees.composites.Sequence(name="Simple Sequence", memory=False)
     sequence.add_children([success_node, invert_failure, plugin])
-
 
     return sequence
 

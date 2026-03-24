@@ -1,0 +1,217 @@
+import os
+from dotenv import load_dotenv
+
+from std_msgs.msg import String
+
+from rclpy.node import Node
+
+import time
+
+import speech_recognition as sr
+from piper import PiperVoice, SynthesisConfig
+import pyaudio
+
+
+load_dotenv()  # This loads the variables from .env file
+
+
+class VoiceInOut(Node):
+
+    user_query_topic = "/user_query"
+    llm_response_topic = "/llm_response"
+    input_audio_service = "/input_audio_service"  # service to request enabling of audio input for commands
+    output_audio_service = "/output_audio_service"  # service to request enabling of audio output for responses
+
+    format = pyaudio.paInt16
+    rate = 22050
+    channels = 1
+
+    voice_gender = "female"  # or male
+
+    can_listen = True  # boolean variable to decide if the node should listen for audio user input
+    can_talk = True  # boolean variable to decide if the node should speak out loud the LLM responses
+
+    def __init__(self):
+        super().__init__("VoiceInOut_Node")
+
+        self.llm_response_sub = None
+        self.user_query_pub = None
+
+        # Initialize variables for speech recognition
+        self.stop_listening = None
+
+        # Initialize speech-to-text recognizer
+        self.stt_recognizer = sr.Recognizer()
+
+        # Initialize microphone for speech input
+        self.stt_mic = None
+
+        self.start_listening()
+
+        # Initialize text-to-speech engine
+        self.model_names = {
+            "female": "en_US-amy-medium.onnx",
+            "male": "en_US-kusal-medium.onnx",
+        }
+
+        current_file_dir = os.path.dirname(os.path.abspath(__file__))
+        model_path = os.path.join(
+            current_file_dir,
+            "models",
+            self.voice_gender,
+            self.model_names[self.voice_gender],
+        )
+
+        self.tts_voice = PiperVoice.load(model_path)
+
+        self.syn_config = SynthesisConfig(
+            volume=1.0,  # half as loud
+            length_scale=1.0,  # twice as slow
+            noise_scale=1.0,  # more audio variation
+            noise_w_scale=1.0,  # more speaking variation
+            normalize_audio=True,  # use raw audio from voice
+        )
+
+        # Start audio stream
+        self.p = pyaudio.PyAudio()
+        self.stream = self.p.open(
+            format=self.format, channels=self.channels, rate=self.rate, output=True
+        )
+
+        # Announce initialization of speech
+        self.speak("Voice input output node initialized.")
+        self.speak("Listening for your commands.")
+
+        self._init_parameters()
+        self._init_publishers()
+        self._init_subscriptions()
+
+    ########################################## Initialization Methods ############################################################################
+
+    def _init_parameters(self) -> None:
+        """Method to initialize parameters such as ROS topics' names"""
+        self.declare_parameter("user_query_topic", self.user_query_topic)
+        self.declare_parameter("llm_response_topic", self.llm_response_topic)
+
+        self.declare_parameter("input_audio_service", self.input_audio_service)
+        self.declare_parameter("output_audio_service", self.output_audio_service)
+
+        self.declare_parameter("voice_gender", self.voice_gender)
+        self.declare_parameter("can_listen", self.can_listen)
+        self.declare_parameter("can_talk", self.can_talk)
+
+        self.user_query_topic = (
+            self.get_parameter("user_query_topic").get_parameter_value().string_value
+        )
+
+        self.llm_response_topic = (
+            self.get_parameter("llm_response_topic").get_parameter_value().string_value
+        )
+
+        self.input_audio_service = (
+            self.get_parameter("input_audio_service").get_parameter_value().string_value
+        )
+        self.output_audio_service = (
+            self.get_parameter("output_audio_service")
+            .get_parameter_value()
+            .string_value
+        )
+
+        self.voice_gender = (
+            self.get_parameter("voice_gender").get_parameter_value().string_value
+        )
+
+        self.can_listen = (
+            self.get_parameter("can_listen").get_parameter_value().bool_value
+        )
+        self.can_talk = self.get_parameter("can_talk").get_parameter_value().bool_value
+
+    def _init_publishers(self) -> None:
+        """Method to initialize publishers"""
+        self.user_query_pub = self.create_publisher(String, self.user_query_topic, 10)
+
+    def _init_subscriptions(self) -> None:
+        """Method to initialize subscriptions"""
+        self.llm_response_sub = self.create_subscription(
+            String, self.llm_response_topic, self.llm_response_callback, 10
+        )
+
+    def start_listening(self) -> None:
+        """Method to start the listening for voice input"""
+        self.get_logger().debug(
+            f"Started listening for user query at {self.get_clock().now()}"
+        )
+        self.stt_mic = sr.Microphone()
+        with self.stt_mic as source:
+            self.stt_recognizer.adjust_for_ambient_noise(source)
+        self.stop_listening = self.stt_recognizer.listen_in_background(
+            self.stt_mic, self.publish_audio_as_text
+        )
+
+    def pause_listening(self) -> None:
+        """Method to pause the listening. this should be used when the text is being spoken out loud"""
+        if self.stop_listening is not None:
+            self.stop_listening(wait_for_stop=False)
+            self.get_logger().debug(
+                f"Stopped listening for user query at {self.get_clock().now()}."
+            )
+
+    def publish_audio_as_text(self, recognizer, audio_input):
+        if self.can_listen:
+            try:
+                user_query = recognizer.recognize_whisper(
+                    audio_input, language="english"
+                )
+                if user_query.strip() == "":
+                    self.get_logger().debug("No speech detected.")
+                else:
+                    user_query_msg = String()
+                    user_query_msg.data = user_query
+                    self.user_query_pub.publish(user_query_msg)
+                    self.get_logger().debug(
+                        f"Published user query: {user_query_msg.data}"
+                    )
+
+            except sr.UnknownValueError:
+                self.get_logger.error("Whisper could not understand audio")
+            except sr.RequestError as e:
+                self.get_logger.error(f"Could not request results from Whisper; {e}")
+
+    def speak(self, text: str) -> None:
+        """Method to speak out loud the given text"""
+        if self.can_talk:
+            try:
+                self.pause_listening()
+                self.get_logger().debug(f"Now speaking at {self.get_clock().now()}.")
+
+                for chunk in self.tts_voice.synthesize(
+                    text, syn_config=self.syn_config
+                ):
+                    self.stream.write(chunk.audio_int16_bytes)
+
+                time.sleep(0.2)
+                self.get_logger().debug(
+                    f"LLM response should have been spoken out loud at {self.get_clock().now()}."
+                )
+                self.start_listening()
+            except Exception as e:
+                self.get_logger().error(f"Error during TTS: {e}")
+        else:
+            self.get_logger().debug("can_talk is disabled; not speaking out loud.")
+
+    ########################################## Subscriber callback ############################################################################
+    def llm_response_callback(self, msg):
+        """Callback method to receive the LLM response and save/stream it as audio"""
+        self.get_logger().debug(f"Received LLM response: {msg.data}")
+        self.speak(str(msg.data))
+
+    def destroy_node(self):
+        try:
+            self.stream.stop_stream()
+            self.stream.close()
+            self.p.terminate()
+        except Exception as e:
+            self.get_logger().warn(f"Error closing audio resources: {e}")
+
+        # Call base class destructor
+        super().destroy_node()

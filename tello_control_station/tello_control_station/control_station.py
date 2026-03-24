@@ -69,7 +69,7 @@ class ControlStation(Node):
             1,
         )
         self.nlp_command_subscriber = self.create_subscription(
-            String, "/text_cmd", self.switch_mode, 10
+            String, "/switch_mode", self.switch_mode, 10
         )
 
     def init_timers(self):
@@ -89,16 +89,16 @@ class ControlStation(Node):
         if mode_command == "keyboard":
             self.pg_interface.update_display_mode("m")
             self.control_mode = "k"
-            msg.data = "m"
-            self.key_pressed_publisher.publish(msg)
+            # msg.data = "m"
+            # self.key_pressed_publisher.publish(msg)
             self.get_logger().info("control mode switched to keyboard")
             return NodeState.SUCCESS
         elif mode_command == "hand":
             self.control_mode = "h"
             self.get_logger().info(f"Control mode set to {self.control_mode}")
             self.pg_interface.update_display_mode("h")
-            msg.data = "h"
-            self.key_pressed_publisher.publish(msg)
+            # msg.data = "h"
+            # self.key_pressed_publisher.publish(msg)
             self.get_logger().info("control mode switched to hand")
             return NodeState.SUCCESS
 
@@ -108,9 +108,7 @@ class ControlStation(Node):
     def switch_mode(self, msg: String):
         mode = msg.data
         if mode:
-            parsed = json.loads(msg.data)
-            parsed = json.loads(parsed["json"])
-            self.get_nlp_input(parsed[0]["params"]["mode"])
+            self.get_nlp_input(mode)
         else:
             self.get_logger().warning("Empty mode received in switch_mode")
 
@@ -178,7 +176,7 @@ class ControlStation(Node):
             self.control_mode = "n"
             self.pg_interface.update_display_mode("n")
             self.key_pressed_publisher.publish(msg)
-            self.get_logger().info("control switched to natural lenguage")
+            self.get_logger().info("control switched to natural language")
             threading.Thread(target=self.nlp_terminal).start()
             return NodeState.SUCCESS
 

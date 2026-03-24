@@ -222,7 +222,7 @@ This flow shows the execution of the `PersonTrackingBT` when:
 - `selected_plugin = "person_tracking"`
 - `tracking_mode = "hand"`
 
-![BT Flow Execution](../assets/BTFlow.png)
+!["BT Flow Execution"](../assets/BTFlow.png)
 
 ### Step-by-Step Flow
 From left to right:
@@ -248,7 +248,7 @@ From left to right:
   * **Branches 17 to 19** would have been executed, causing the drone to rotate to search for the target and lands after a full 360° turn.
 
 
-### ✅ Summary Table
+### Summary Table 
 
 | Branch                     | Status     | Purpose/Result                                                                 |
 |----------------------------|------------|--------------------------------------------------------------------------------|

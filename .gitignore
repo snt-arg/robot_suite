@@ -4,14 +4,25 @@
 # ROS-folders
 build/
 install/
-logs/
-drivers/
+log/
+
+
+
+# temporarily
+robot_station/
+docs/
+mkdocs.yml
+
+interaction_log.txt
+
 
 # ML models
 *.pt
+*.onnx
 nanodet-plus-m-1.5x_416_checkpoint.ckpt
 nanodet_m.ckpt
 altitude_checker.py
+
 
 
 ### Python ###
@@ -219,5 +230,17 @@ AMENT_IGNORE
 
 # LLM
 interaction*.txt
+
+# Other folders and files
+node_modules/
+drivers/
+.vscode/
+rosbridge_suite/
+spot_ros2/
+suitenv/
+toignore/
+docker/
+rosbag2*
+Logslogs
 
 # End of https://www.toptal.com/developers/gitignore/api/ros2,python

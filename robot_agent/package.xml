@@ -4,8 +4,13 @@
   <name>robot_agent</name>
   <version>0.0.0</version>
   <description>An LLM Agent for robot_suite built on ROSA</description>
-  <maintainer email="ines.pastor.001@sutdent.uni.lu">Ines Pastor</maintainer>
+  <maintainer email="ines.pastor.001@student.uni.lu">Ines Pastor</maintainer>
   <license>GPL-3.0</license>
+
+  <test_depend>ament_copyright</test_depend>
+  <test_depend>ament_flake8</test_depend>
+  <test_depend>ament_pep257</test_depend>
+  <test_depend>python3-pytest</test_depend>
 
   <export>
     <build_type>ament_python</build_type>
